@@ -50,6 +50,12 @@ func (a *App) registerAuthController(apiGroupPublic *echo.Group) {
 	authGroup.POST("/signout", ac.SignOut).Name = "auth-signout"
 }
 
+func (a *App) registerHammerheadPublicController(apiGroupPublic *echo.Group) {
+	hc := controller.NewHammerheadController(&a.container)
+
+	apiGroupPublic.POST("/webhooks/hammerhead/activity", hc.Webhook).Name = "hammerhead-webhook-activity"
+}
+
 func (a *App) registerStatisticsController(apiGroup *echo.Group) {
 	sc := controller.NewStatisticsController(&a.container)
 
@@ -58,6 +64,7 @@ func (a *App) registerStatisticsController(apiGroup *echo.Group) {
 
 func (a *App) registerProfileController(apiGroup *echo.Group) {
 	pc := controller.NewProfileController(&a.container)
+	hc := controller.NewHammerheadController(&a.container)
 
 	profileGroup := apiGroup.Group("/profile")
 	profileGroup.GET("", pc.GetProfile).Name = "profile"
@@ -68,6 +75,10 @@ func (a *App) registerProfileController(apiGroup *echo.Group) {
 	profileGroup.POST("/follow-requests/:id/accept", pc.AcceptFollowRequest).Name = "profile-follow-request-accept"
 	profileGroup.POST("/refresh-workouts", pc.RefreshWorkouts).Name = "profile-refresh-workouts"
 	profileGroup.POST("/update-version", pc.UpdateVersion).Name = "user-update-version"
+	profileGroup.GET("/apps/hammerhead", hc.GetConnection).Name = "profile-apps-hammerhead-status"
+	profileGroup.POST("/apps/hammerhead/connect", hc.Connect).Name = "profile-apps-hammerhead-connect"
+	profileGroup.GET("/apps/hammerhead/callback", hc.Callback).Name = "profile-apps-hammerhead-callback"
+	profileGroup.DELETE("/apps/hammerhead", hc.Disconnect).Name = "profile-apps-hammerhead-disconnect"
 }
 
 func (a *App) registerAdminController(apiGroup *echo.Group) {

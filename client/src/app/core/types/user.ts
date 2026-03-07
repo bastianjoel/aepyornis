@@ -96,6 +96,11 @@ export type FollowRequest = {
   created_at: string;
 };
 
+export type HammerheadConnectionStatus = {
+  connected: boolean;
+  hammerhead_user_id?: string;
+};
+
 export type ActivityPubProfileSummary = {
   id: number;
   username: string;

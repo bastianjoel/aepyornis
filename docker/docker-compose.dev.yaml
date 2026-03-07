@@ -11,6 +11,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    ports:
+      - 5432:5432
     volumes:
       - db-data:/var/lib/postgresql/data/
 
@@ -32,7 +34,7 @@ services:
       APP_ENV: development
       WT_WORKER_DELAY_SECONDS: 5
       WT_ACTIVITY_PUB_ACTIVE: true
-      WT_HOST: localhost:4200
+      WT_HOST: dev-public-test.birne.dev
       WT_JWT_ENCRYPTION_KEY_FILE: /run/secrets/jwt_encryption_key
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/health || exit 1"]

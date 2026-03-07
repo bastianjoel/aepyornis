@@ -3,7 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Api } from '../../../core/services/api';
 import { AppConfig } from '../../../core/services/app-config';
-import { FollowRequest, FullUserProfile } from '../../../core/types/user';
+import { FollowRequest, FullUserProfile, HammerheadConnectionStatus } from '../../../core/types/user';
 import { TranslateService } from '@ngx-translate/core';
 
 @Injectable()
@@ -22,6 +22,10 @@ export class ProfileStore {
   public readonly followRequests = signal<FollowRequest[]>([]);
   public readonly loadingFollowRequests = signal(false);
   public readonly acceptingRequestIds = signal<Record<number, boolean>>({});
+  public readonly hammerheadConnection = signal<HammerheadConnectionStatus | null>(null);
+  public readonly loadingHammerhead = signal(false);
+  public readonly connectingHammerhead = signal(false);
+  public readonly disconnectingHammerhead = signal(false);
 
   public readonly profileForm: FormGroup = this.fb.group({
     birthdate: [''],
@@ -213,6 +217,70 @@ export class ProfileStore {
       );
     } finally {
       this.loadingFollowRequests.set(false);
+    }
+  }
+
+  public async loadHammerheadConnection(): Promise<void> {
+    this.loadingHammerhead.set(true);
+
+    try {
+      const response = await firstValueFrom(this.api.getHammerheadConnection());
+      this.hammerheadConnection.set(response?.results ?? { connected: false });
+    } catch (err) {
+      this.error.set(
+        this.translate.instant('Failed to load Hammerhead connection: {{message}}', {
+          message: this.errorMessage(err),
+        }),
+      );
+    } finally {
+      this.loadingHammerhead.set(false);
+    }
+  }
+
+  public async connectHammerhead(): Promise<void> {
+    this.connectingHammerhead.set(true);
+    this.error.set(null);
+
+    try {
+      const response = await firstValueFrom(this.api.connectHammerhead());
+      const authorizeURL = response?.results?.authorize_url;
+      if (!authorizeURL) {
+        throw new Error(this.translate.instant('No authorize URL returned by server'));
+      }
+
+      window.location.href = authorizeURL;
+    } catch (err) {
+      this.error.set(
+        this.translate.instant('Failed to start Hammerhead connection: {{message}}', {
+          message: this.errorMessage(err),
+        }),
+      );
+    } finally {
+      this.connectingHammerhead.set(false);
+    }
+  }
+
+  public async disconnectHammerhead(): Promise<void> {
+    if (!confirm(this.translate.instant('Disconnect Hammerhead from your account?'))) {
+      return;
+    }
+
+    this.disconnectingHammerhead.set(true);
+    this.error.set(null);
+
+    try {
+      const response = await firstValueFrom(this.api.disconnectHammerhead());
+      this.successMessage.set(response?.results?.message ?? this.translate.instant('Hammerhead disconnected'));
+      this.hammerheadConnection.set({ connected: false });
+      setTimeout(() => this.successMessage.set(null), 3000);
+    } catch (err) {
+      this.error.set(
+        this.translate.instant('Failed to disconnect Hammerhead: {{message}}', {
+          message: this.errorMessage(err),
+        }),
+      );
+    } finally {
+      this.disconnectingHammerhead.set(false);
     }
   }
 

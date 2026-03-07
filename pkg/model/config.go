@@ -36,6 +36,10 @@ type EnvConfig struct {
 	WorkerDelaySeconds int    `mapstructure:"worker_delay_seconds" gorm:"-"` // Time in seconds between worker runs
 	AutoImportEnabled  bool   `mapstructure:"auto_import_enabled" gorm:"-"`  // Enable auto-import scheduler and profile setting
 	ActivityPubActive  bool   `mapstructure:"activity_pub_active" gorm:"-"`  // Whether the ActivityPub implementation is active
+	HammerheadClientID string `mapstructure:"hammerhead_client_id" gorm:"-"` // Hammerhead OAuth client id
+	HammerheadSecret   string `mapstructure:"hammerhead_client_secret" gorm:"-"`
+	HammerheadRedirect string `mapstructure:"hammerhead_redirect_uri" gorm:"-"`
+	HammerheadWebhook  string `mapstructure:"hammerhead_webhook_secret" gorm:"-"`
 
 	JWTEncryptionKeyFile string `mapstructure:"jwt_encryption_key_file" gorm:"-"` // File containing the encryption key for JWT
 	DSNFile              string `mapstructure:"dsn_file" gorm:"-"`                // File containing the database DSN

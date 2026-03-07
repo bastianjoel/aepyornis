@@ -20,6 +20,7 @@ export class Profile implements OnInit {
     { label: 'Privacy', route: '/profile/settings/privacy' },
     { label: 'Followers', route: '/profile/settings/followers' },
     { label: 'Actions', route: '/profile/settings/actions' },
+    { label: 'Apps', route: '/profile/settings/apps' },
   ];
 
   public ngOnInit(): void {

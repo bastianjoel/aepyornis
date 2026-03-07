@@ -178,6 +178,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	apiGroupPublic := e.Group("/api/v2")
 	apiGroupPublic.GET("/app-info", a.apiV2AppInfoHandler).Name = "api-v2-app-info"
 	a.registerAuthController(apiGroupPublic)
+	a.registerHammerheadPublicController(apiGroupPublic)
 
 	apiGroup := e.Group("/api/v2")
 	apiGroup.Use(echojwt.WithConfig(echojwt.Config{

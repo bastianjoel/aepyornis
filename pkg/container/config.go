@@ -47,6 +47,10 @@ func (c *Config) Load() error {
 	viper.SetDefault("worker_delay_seconds", 60)
 	viper.SetDefault("auto_import_enabled", false)
 	viper.SetDefault("activity_pub_active", false)
+	viper.SetDefault("hammerhead_client_id", "")
+	viper.SetDefault("hammerhead_client_secret", "")
+	viper.SetDefault("hammerhead_redirect_uri", "")
+	viper.SetDefault("hammerhead_webhook_secret", "")
 
 	for _, envVar := range []string{
 		"host",
@@ -65,6 +69,10 @@ func (c *Config) Load() error {
 		"worker_delay_seconds",
 		"auto_import_enabled",
 		"activity_pub_active",
+		"hammerhead_client_id",
+		"hammerhead_client_secret",
+		"hammerhead_redirect_uri",
+		"hammerhead_webhook_secret",
 	} {
 		if err := viper.BindEnv(envVar); err != nil {
 			return err

@@ -180,6 +180,11 @@ export const routes: Routes = [
                 (m) => m.ProfileActionsPage,
               ),
           },
+          {
+            path: 'apps',
+            loadComponent: () =>
+              import('./features/profile/pages/apps/apps').then((m) => m.ProfileAppsPage),
+          },
         ],
       },
       {

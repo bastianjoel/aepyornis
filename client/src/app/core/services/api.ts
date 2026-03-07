@@ -13,6 +13,7 @@ import {
   AppInfo,
   FollowRequest,
   FullUserProfile,
+  HammerheadConnectionStatus,
   ProfileUpdateRequest,
   UserProfile,
   UserUpdateRequest,
@@ -575,6 +576,25 @@ export class Api {
     return this.http.post<APIResponse<{ message: string }>>(
       `${this.baseUrl}/profile/refresh-workouts`,
       {},
+    );
+  }
+
+  public getHammerheadConnection(): Observable<APIResponse<HammerheadConnectionStatus>> {
+    return this.http.get<APIResponse<HammerheadConnectionStatus>>(
+      `${this.baseUrl}/profile/apps/hammerhead`,
+    );
+  }
+
+  public connectHammerhead(): Observable<APIResponse<{ authorize_url: string }>> {
+    return this.http.post<APIResponse<{ authorize_url: string }>>(
+      `${this.baseUrl}/profile/apps/hammerhead/connect`,
+      {},
+    );
+  }
+
+  public disconnectHammerhead(): Observable<APIResponse<{ message: string }>> {
+    return this.http.delete<APIResponse<{ message: string }>>(
+      `${this.baseUrl}/profile/apps/hammerhead`,
     );
   }
 
