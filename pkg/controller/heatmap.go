@@ -37,7 +37,7 @@ func (hc *heatmapController) GetWorkoutCoordinates(c echo.Context) error {
 
 	u := hc.context.GetUser(c)
 
-	wos, err := hc.context.WorkoutRepo().ListByUserID(u.ID)
+	wos, err := hc.context.WorkoutRepo().ListByUserIDWithDetails(u.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
