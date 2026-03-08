@@ -8,6 +8,7 @@ import {
   AppConfig,
   AppInfo,
   FollowRequest,
+  ProfileChangePasswordRequest,
   FullUserProfile,
   HammerheadConnectionStatus,
   ProfileChangePasswordRequest,
@@ -512,6 +513,15 @@ export class Api {
 
   public updateProfile(profile: ProfileUpdateRequest): Observable<APIResponse<FullUserProfile>> {
     return this.http.put<APIResponse<FullUserProfile>>(`${this.baseUrl}/profile`, profile);
+  }
+
+  public changePassword(
+    payload: ProfileChangePasswordRequest,
+  ): Observable<APIResponse<{ message: string }>> {
+    return this.http.post<APIResponse<{ message: string }>>(
+      `${this.baseUrl}/profile/change-password`,
+      payload,
+    );
   }
 
   public resetAPIKey(): Observable<APIResponse<{ api_key: string; message: string }>> {
