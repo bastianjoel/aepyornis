@@ -36,7 +36,10 @@ services:
       - ap2-db-data:/var/lib/postgresql/data/
 
   ap1-workout-tracker:
-    image: ghcr.io/aepyornisnet/aepyornis:main
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+      target: dev-backend
     restart: unless-stopped
     tty: true
     depends_on:
@@ -58,12 +61,21 @@ services:
       retries: 6
       start_period: 20s
     volumes:
+      - ap-asset-volume:/app/assets
+      - ap-cache-volume:/root/.cache
+      - ../cmd:/app/cmd
+      - ../pkg:/app/pkg
+      - ../vendor:/app/vendor
+      - ../translations:/app/translations
       - ap-caddy-data:/caddy-data:ro
     secrets:
       - jwt_encryption_key
 
   ap2-workout-tracker:
-    image: ghcr.io/aepyornisnet/aepyornis:main
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+      target: dev-backend
     restart: unless-stopped
     tty: true
     depends_on:
@@ -85,6 +97,12 @@ services:
       retries: 6
       start_period: 20s
     volumes:
+      - ap-asset-volume:/app/assets
+      - ap-cache-volume:/root/.cache
+      - ../cmd:/app/cmd
+      - ../pkg:/app/pkg
+      - ../vendor:/app/vendor
+      - ../translations:/app/translations
       - ap-caddy-data:/caddy-data:ro
     secrets:
       - jwt_encryption_key
@@ -96,6 +114,10 @@ services:
       ap1-workout-tracker:
         condition: service_started
       ap2-workout-tracker:
+        condition: service_started
+      ap1-workout-tracker-client:
+        condition: service_started
+      ap2-workout-tracker-client:
         condition: service_started
     ports:
       - 80:80
@@ -110,6 +132,34 @@ services:
       - ap-caddy-data:/data
       - ap-caddy-config:/config
 
+  ap1-workout-tracker-client:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+      target: dev-frontend
+    depends_on:
+      - ap1-workout-tracker
+    networks:
+      - workout-tracker
+    volumes:
+      - ../client/src:/app/client/src
+      - ../client/public:/app/client/public
+    tty: true
+
+  ap2-workout-tracker-client:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+      target: dev-frontend
+    depends_on:
+      - ap2-workout-tracker
+    networks:
+      - workout-tracker
+    volumes:
+      - ../client/src:/app/client/src
+      - ../client/public:/app/client/public
+    tty: true
+
 secrets:
   jwt_encryption_key:
     file: ./jwt_encryption_key.txt
@@ -117,6 +167,8 @@ secrets:
 volumes:
   ap1-db-data:
   ap2-db-data:
+  ap-asset-volume:
+  ap-cache-volume:
   ap-caddy-data:
   ap-caddy-config:
 

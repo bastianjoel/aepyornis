@@ -1,11 +1,15 @@
 wt-ap1.test {
 	bind 0.0.0.0
 	tls internal
-	reverse_proxy ap1-workout-tracker:8080
+	@ap1_backend path /api* /ap* /auth* /.well-known*
+	reverse_proxy @ap1_backend ap1-workout-tracker:8080
+	reverse_proxy ap1-workout-tracker-client:4200
 }
 
 wt-ap2.test {
 	bind 0.0.0.0
 	tls internal
-	reverse_proxy ap2-workout-tracker:8080
+	@ap2_backend path /api* /ap* /auth* /.well-known*
+	reverse_proxy @ap2_backend ap2-workout-tracker:8080
+	reverse_proxy ap2-workout-tracker-client:4200
 }
