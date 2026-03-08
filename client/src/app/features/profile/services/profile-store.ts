@@ -3,7 +3,11 @@ import { firstValueFrom } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Api } from '../../../core/services/api';
 import { AppConfig } from '../../../core/services/app-config';
-import { FollowRequest, FullUserProfile, HammerheadConnectionStatus } from '../../../core/types/user';
+import {
+  FollowRequest,
+  FullUserProfile,
+  HammerheadConnectionStatus,
+} from '../../../core/types/user';
 import { TranslateService } from '@ngx-translate/core';
 
 @Injectable()
@@ -270,7 +274,9 @@ export class ProfileStore {
 
     try {
       const response = await firstValueFrom(this.api.disconnectHammerhead());
-      this.successMessage.set(response?.results?.message ?? this.translate.instant('Hammerhead disconnected'));
+      this.successMessage.set(
+        response?.results?.message ?? this.translate.instant('Hammerhead disconnected'),
+      );
       this.hammerheadConnection.set({ connected: false });
       setTimeout(() => this.successMessage.set(null), 3000);
     } catch (err) {

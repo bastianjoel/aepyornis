@@ -1,11 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import {
-  APIResponse,
-  PaginatedAPIResponse,
-  PaginationParams,
-} from '../../core/types/api-response';
+import { APIResponse, PaginatedAPIResponse, PaginationParams } from '../../core/types/api-response';
 import {
   ActivityPubActor,
   ActivityPubProfileSummary,
@@ -14,6 +10,7 @@ import {
   FollowRequest,
   FullUserProfile,
   HammerheadConnectionStatus,
+  ProfileChangePasswordRequest,
   ProfileUpdateRequest,
   UserProfile,
   UserUpdateRequest,
@@ -57,7 +54,10 @@ export class Api {
   }
 
   public register(payload: RegisterRequest): Observable<APIResponse<{ message: string }>> {
-    return this.http.post<APIResponse<{ message: string }>>(`${this.baseUrl}/auth/register`, payload);
+    return this.http.post<APIResponse<{ message: string }>>(
+      `${this.baseUrl}/auth/register`,
+      payload,
+    );
   }
 
   public signOut(): Observable<APIResponse<{ message: string }>> {
@@ -220,9 +220,9 @@ export class Api {
     );
   }
 
-  public likeWorkout(id: number): Observable<
-    APIResponse<{ workout_id: number; likes_count: number; liked: boolean }>
-  > {
+  public likeWorkout(
+    id: number,
+  ): Observable<APIResponse<{ workout_id: number; likes_count: number; liked: boolean }>> {
     return this.http.post<APIResponse<{ workout_id: number; likes_count: number; liked: boolean }>>(
       `${this.baseUrl}/workouts/${id}/like`,
       {},
@@ -532,7 +532,9 @@ export class Api {
     return this.http.get<APIResponse<FollowRequest[]>>(`${this.baseUrl}/profile/follow-requests`);
   }
 
-  public getUserProfileSummary(handle?: string): Observable<APIResponse<ActivityPubProfileSummary>> {
+  public getUserProfileSummary(
+    handle?: string,
+  ): Observable<APIResponse<ActivityPubProfileSummary>> {
     let httpParams = new HttpParams();
     if (handle) {
       httpParams = httpParams.set('handle', handle);
