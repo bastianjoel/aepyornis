@@ -46,10 +46,6 @@ func HandleInboxActivity(ctx InboxHandlerContext) (bool, error) {
 		return false, nil
 	}
 
-	if hasActivityType(vocab.ReactionsActivityTypes, ctx.Activity.GetType()) {
-		return routeReactionActivity(ctx)
-	}
-
 	switch ctx.Activity.GetType() {
 	case vocab.FollowType:
 		return true, handleFollowActivity(ctx)
@@ -66,16 +62,6 @@ func HandleInboxActivity(ctx InboxHandlerContext) (bool, error) {
 	default:
 		return false, nil
 	}
-}
-
-func hasActivityType(types vocab.ActivityVocabularyTypes, typ vocab.Typer) bool {
-	for _, candidate := range types {
-		if candidate.Match(typ) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func routeReactionActivity(ctx InboxHandlerContext) (bool, error) {
