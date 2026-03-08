@@ -375,6 +375,9 @@ export class WorkoutStatisticsComponent {
 			return '-';
 		}
 
+		if (unit === `%`) {
+			value = value * 100;
+		}
 		const digits = decimals !== undefined && decimals > 0 ? `1.${decimals}-${decimals}` : '1.0-0';
 		const formatted = formatNumber(value, this.locale, digits);
 		return unit ? `${formatted} ${unit}` : formatted;
