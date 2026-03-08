@@ -27,6 +27,7 @@ type WorkoutResponse struct {
 	UpdatedAt            time.Time               `json:"updated_at"`
 	HasFile              bool                    `json:"has_file"`
 	HasTracks            bool                    `json:"has_tracks"`
+	HasLocationData      bool                    `json:"has_location_data"`
 	ActivityPubPublished bool                    `json:"activity_pub_published"`
 	LikesCount           int64                   `json:"likes_count"`
 	LikedByMe            bool                    `json:"liked_by_me"`
@@ -285,20 +286,21 @@ type CalendarEventResponse struct {
 // NewWorkoutResponse converts a database workout to API response
 func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 	wr := WorkoutResponse{
-		ID:         w.ID,
-		Date:       w.Date,
-		Dirty:      w.Dirty,
-		Name:       w.Name,
-		Notes:      w.Notes,
-		Type:       string(w.Type),
-		CustomType: w.CustomType,
-		UserID:     w.UserID,
-		Visibility: w.Visibility,
-		Locked:     w.Locked,
-		CreatedAt:  w.CreatedAt,
-		UpdatedAt:  w.UpdatedAt,
-		HasFile:    w.HasFile(),
-		HasTracks:  w.HasTracks(),
+		ID:              w.ID,
+		Date:            w.Date,
+		Dirty:           w.Dirty,
+		Name:            w.Name,
+		Notes:           w.Notes,
+		Type:            string(w.Type),
+		CustomType:      w.CustomType,
+		UserID:          w.UserID,
+		Visibility:      w.Visibility,
+		Locked:          w.Locked,
+		CreatedAt:       w.CreatedAt,
+		UpdatedAt:       w.UpdatedAt,
+		HasFile:         w.HasFile(),
+		HasTracks:       w.HasTracks(),
+		HasLocationData: w.HasTracks(),
 	}
 
 	// Add user data if available (preloaded)

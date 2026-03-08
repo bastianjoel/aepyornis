@@ -316,8 +316,11 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     const metricSettings = this.getMetricSettings();
     const datasets: ChartDataset[] = [];
 
+    const hasDefaultSpeed = this.hasMeaningfulSeries(mapData.speed, false);
+    const hasDefaultElevation = this.hasMeaningfulSeries(mapData.elevation, false);
+
     // Add speed dataset (convert to preferred unit)
-    if (mapData.speed) {
+    if (hasDefaultSpeed) {
       const speedData = mapData.speed.map((val) => this.convertSpeed(val));
       datasets.push({
         type: 'line',
@@ -331,20 +334,23 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
 
     // Add extra metrics
     if (mapData.extra_metrics) {
+      let firstHiddenExtraMetricIdx = -1;
+
       for (const metric of metrics) {
         if (metric === 'speed') {
           continue;
         } // Already handled
 
-        if (mapData.extra_metrics[metric]) {
+        if (mapData.extra_metrics[metric] && this.hasMeaningfulSeries(mapData.extra_metrics[metric], true)) {
           const settings = metricSettings[metric];
+          const hiddenByDefault = settings?.hiddenByDefault || false;
           datasets.push({
             type: 'line',
             label: this.getMetricLabel(metric),
             data: mapData.extra_metrics[metric] as number[],
             yAxisID: metric,
             spanGaps: true,
-            hidden: settings?.hiddenByDefault || false,
+            hidden: hiddenByDefault,
             ...(metric === 'heart-rate'
               ? {
                   segment: {
@@ -374,12 +380,22 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
                 }
               : {}),
           });
+
+          if (hiddenByDefault && firstHiddenExtraMetricIdx < 0) {
+            firstHiddenExtraMetricIdx = datasets.length - 1;
+          }
         }
+      }
+
+      // Keep default behavior (speed/elevation visible) unless both are unavailable.
+      // In that case, reveal the first available extra metric so the chart is not empty.
+      if (!hasDefaultSpeed && !hasDefaultElevation && firstHiddenExtraMetricIdx >= 0) {
+        datasets[firstHiddenExtraMetricIdx].hidden = false;
       }
     }
 
     // Add elevation dataset with area fill
-    if (mapData.elevation) {
+    if (this.hasMeaningfulSeries(mapData.elevation, false)) {
       datasets.push({
         type: 'line',
         label: 'Elevation',
@@ -640,4 +656,15 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
     // Default to km/h when unit is not mph
     return value * 3.6;
   }
+
+  private hasMeaningfulSeries(values: (number | null | undefined)[] | undefined, allowZero: boolean): boolean {
+    if (!Array.isArray(values)) {
+      return false;
+    }
+
+    return values.some(
+      (value) => typeof value === 'number' && Number.isFinite(value) && (allowZero || Math.abs(value) > 0),
+    );
+  }
+
 }

@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -49,8 +48,6 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 				return err
 			}
 
-			storeWorkoutAttachmentImage(db, l, w)
-
 			if w.Data != nil && !w.Data.Center.IsZero() && w.Data.AddressString == "" {
 				if err := EnqueueAddressUpdate(ctx, c, w.Data.ID); err != nil {
 					l.Error("Failed to enqueue address update after workout processing", "error", err)
@@ -58,11 +55,7 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 			}
 		}
 
-		if _, err := model.GetRouteImageAttachment(db, w.ID); errors.Is(err, gorm.ErrRecordNotFound) {
-			storeWorkoutAttachmentImage(db, l, w)
-		} else if err != nil {
-			l.Warn("Failed to check existing workout attachment image", "error", err)
-		}
+		syncWorkoutAttachmentImage(db, l, w)
 
 		user, err := c.UserRepo().GetByID(w.UserID)
 		if err != nil {
@@ -78,7 +71,7 @@ func makeUpdateWorkoutHandler(c *container.Container, logger *slog.Logger) gue.W
 }
 
 func storeWorkoutAttachmentImage(db *gorm.DB, logger *slog.Logger, workout *model.Workout) {
-	routeImageContent, routeImageErr := model.GenerateWorkoutAttachmentImage(workout)
+	routeImageContent, routeImageErr := model.GenerateWorkoutRouteImage(workout)
 	if routeImageErr != nil {
 		logger.Warn("Failed to generate workout attachment image", "error", routeImageErr)
 		return
@@ -93,4 +86,15 @@ func storeWorkoutAttachmentImage(db *gorm.DB, logger *slog.Logger, workout *mode
 	); err != nil {
 		logger.Error("Failed to store workout route image attachment", "error", err)
 	}
+}
+
+func syncWorkoutAttachmentImage(db *gorm.DB, logger *slog.Logger, workout *model.Workout) {
+	if model.WorkoutRoutePointCount(workout) < 2 {
+		if err := model.DeleteRouteImageAttachment(db, workout.ID); err != nil {
+			logger.Warn("Failed to remove workout route image attachment", "error", err)
+		}
+		return
+	}
+
+	storeWorkoutAttachmentImage(db, logger, workout)
 }

@@ -22,6 +22,7 @@ export type Workout = {
   updated_at: string;
   has_file: boolean;
   has_tracks: boolean;
+  has_location_data: boolean;
   activity_pub_published: boolean;
   likes_count: number;
   liked_by_me: boolean;

@@ -92,3 +92,8 @@ func UpsertRouteImageAttachment(db *gorm.DB, workoutID uint64, filename string, 
 
 	return &attachment, nil
 }
+
+func DeleteRouteImageAttachment(db *gorm.DB, workoutID uint64) error {
+	return db.Where("workout_id = ? AND kind = ?", workoutID, WorkoutAttachmentKindRouteImage).
+		Delete(&WorkoutAttachment{}).Error
+}

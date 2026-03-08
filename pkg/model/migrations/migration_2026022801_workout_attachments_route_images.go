@@ -1,6 +1,8 @@
 package migrations
 
 import (
+	"errors"
+
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"gorm.io/gorm"
 )
@@ -51,8 +53,12 @@ func backfillWorkoutRouteImageAttachments(db *gorm.DB) error {
 				return getErr
 			}
 
-			routeImageContent, generateErr := model.GenerateWorkoutAttachmentImage(workout)
+			routeImageContent, generateErr := model.GenerateWorkoutRouteImage(workout)
 			if generateErr != nil {
+				if errors.Is(generateErr, model.ErrWorkoutMissingCoordinates) {
+					continue
+				}
+
 				return generateErr
 			}
 

@@ -21,19 +21,42 @@ export class WorkoutDetailDataService {
   // Computed values
   public readonly hasTrack = computed(() => {
     const w = this.workout();
-    return !!(w?.has_tracks && w.map_data?.details?.position && w.map_data.details.position.length > 0);
+    return !!(w?.has_location_data ?? w?.has_tracks);
   });
 
   public readonly hasChartData = computed(() => {
+    return this.hasTimeChartData() || this.hasDistanceChartData();
+  });
+
+  public readonly hasTimeChartData = computed(() => {
     const d = this.workout()?.map_data?.details;
-    if (!d) {
+    if (!d || d.time.length === 0) {
       return false;
     }
 
-    const lengths = [d.time?.length || 0, d.distance?.length || 0, d.duration?.length || 0, d.speed?.length || 0, d.elevation?.length || 0];
-    const extraHasValues = d.extra_metrics && Object.values(d.extra_metrics).some((arr) => Array.isArray(arr) && arr.length > 0);
+    return (
+      this.hasNonZeroSeries(d.speed) ||
+      this.hasNonZeroSeries(d.elevation) ||
+      this.hasAnyNumericExtraMetric(d.extra_metrics)
+    );
+  });
 
-    return lengths.some((len) => len > 0) || !!extraHasValues;
+  public readonly hasDistanceChartData = computed(() => {
+    const d = this.workout()?.map_data?.details;
+    if (!d || d.time.length === 0 || d.distance.length === 0) {
+      return false;
+    }
+
+    const hasDistanceValues = d.distance.some((value) => Number.isFinite(value) && value > 0);
+    if (!hasDistanceValues) {
+      return false;
+    }
+
+    return (
+      this.hasNonZeroSeries(d.speed) ||
+      this.hasNonZeroSeries(d.elevation) ||
+      this.hasAnyNumericExtraMetric(d.extra_metrics)
+    );
   });
 
   public readonly hasClimbs = computed(() => {
@@ -149,5 +172,23 @@ export class WorkoutDetailDataService {
 
   public formatSpeed(speed: number): string {
     return (speed * 3.6).toFixed(2); // Convert m/s to km/h
+  }
+
+  private hasNonZeroSeries(values: (number | null | undefined)[] | undefined): boolean {
+    if (!Array.isArray(values)) {
+      return false;
+    }
+
+    return values.some((value) => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) > 0);
+  }
+
+  private hasAnyNumericExtraMetric(extraMetrics: Record<string, (number | null)[]> | undefined): boolean {
+    if (!extraMetrics) {
+      return false;
+    }
+
+    return Object.values(extraMetrics).some((arr) =>
+      Array.isArray(arr) && arr.some((value) => typeof value === 'number' && Number.isFinite(value)),
+    );
   }
 }

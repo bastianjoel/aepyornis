@@ -107,29 +107,33 @@
           <div class="card shadow-sm mb-4">
             <div class="card-header">
               <ul #statistics="ngbNav" class="nav nav-tabs card-header-tabs" ngbNav>
-                <li ngbNavItem [destroyOnHide]="false">
-                  <button ngbNavLink>{{ 'Time chart' | translate }}</button>
-                  <ng-template ngbNavContent>
-                    <div class="chart-container">
-                      <app-workout-chart
-                        [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-                        [mapData]="dataService.workout()!.map_data!.details"
-                      />
-                    </div>
-                  </ng-template>
-                </li>
-                <li ngbNavItem [destroyOnHide]="false">
-                  <button ngbNavLink>{{ 'Distance chart' | translate }}</button>
-                  <ng-template ngbNavContent>
-                    <div class="chart-container">
-                      <app-workout-chart
-                        [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-                        [mapData]="dataService.workout()!.map_data!.details"
-                        [viewMode]="'distance'"
-                      />
-                    </div>
-                  </ng-template>
-                </li>
+                @if (dataService.hasTimeChartData()) {
+                  <li ngbNavItem [destroyOnHide]="false">
+                    <button ngbNavLink>{{ 'Time chart' | translate }}</button>
+                    <ng-template ngbNavContent>
+                      <div class="chart-container">
+                        <app-workout-chart
+                          [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
+                          [mapData]="dataService.workout()!.map_data!.details"
+                        />
+                      </div>
+                    </ng-template>
+                  </li>
+                }
+                @if (dataService.hasDistanceChartData()) {
+                  <li ngbNavItem [destroyOnHide]="false">
+                    <button ngbNavLink>{{ 'Distance chart' | translate }}</button>
+                    <ng-template ngbNavContent>
+                      <div class="chart-container">
+                        <app-workout-chart
+                          [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
+                          [mapData]="dataService.workout()!.map_data!.details"
+                          [viewMode]="'distance'"
+                        />
+                      </div>
+                    </ng-template>
+                  </li>
+                }
                 @if (hasWorkoutStatisticsTab() && dataService.workout()) {
                   <li ngbNavItem>
                     <button ngbNavLink>{{ 'Statistics' | translate }}</button>

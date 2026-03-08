@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"image"
 	"image/color"
 	"image/png"
 	"math"
@@ -77,16 +76,7 @@ func GenerateWorkoutRouteImage(workout *Workout) ([]byte, error) {
 }
 
 func GenerateWorkoutAttachmentImage(workout *Workout) ([]byte, error) {
-	content, err := GenerateWorkoutRouteImage(workout)
-	if err == nil {
-		return content, nil
-	}
-
-	if !errors.Is(err, ErrWorkoutMissingCoordinates) {
-		return nil, err
-	}
-
-	return generateWorkoutFallbackImage()
+	return GenerateWorkoutRouteImage(workout)
 }
 
 func WorkoutRoutePointCount(workout *Workout) int {
@@ -99,38 +89,6 @@ func WorkoutRouteImageFilename(workout *Workout) string {
 	}
 
 	return fmt.Sprintf("workout-%d-route.png", workout.ID)
-}
-
-func generateWorkoutFallbackImage() ([]byte, error) {
-	img := image.NewRGBA(image.Rect(0, 0, routeImageWidth, routeImageHeight))
-
-	bg := color.RGBA{R: 16, G: 24, B: 40, A: 255}
-	accent := color.RGBA{R: 0, G: 85, B: 255, A: 255}
-
-	for y := 0; y < routeImageHeight; y++ {
-		for x := 0; x < routeImageWidth; x++ {
-			img.Set(x, y, bg)
-		}
-	}
-
-	stripeTop := routeImageHeight/2 - 20
-	stripeBottom := routeImageHeight/2 + 20
-	for y := stripeTop; y < stripeBottom; y++ {
-		for x := routeImageWidth / 8; x < routeImageWidth*7/8; x++ {
-			img.Set(x, y, accent)
-		}
-	}
-
-	buf := bytes.NewBuffer(nil)
-	if err := png.Encode(buf, img); err != nil {
-		return nil, err
-	}
-
-	if buf.Len() == 0 {
-		return nil, errors.New("generated fallback workout image is empty")
-	}
-
-	return buf.Bytes(), nil
 }
 
 func routePointsFromWorkout(workout *Workout) []routePoint {
