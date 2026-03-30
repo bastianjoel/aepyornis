@@ -1,6 +1,6 @@
 remote_theme: vaibhavvikas/jekyll-theme-minimalistic
 title: Aepyornis
-description: A workout tracking web application for personal use (or family, friends), geared towards running and other GPX-based activities
+description: Aepyornis is a social sports-activity sharing app, built on ActivityPub.
 navigation:
   - name: Home
     link: ./index.html
