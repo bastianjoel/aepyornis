@@ -6,6 +6,7 @@
 [![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/AepyornisNet/aepyornis)](https://libraries.io/go/github.com%2FAepyornisNet%2Faepyornis%2Fv2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Swagger Validator](https://img.shields.io/swagger/valid/3.0?specUrl=https%3A%2F%2Fraw.githubusercontent.com%2FAepyornisNet%2Faepyornis%main%2Fdocs%2Fswagger.json)](https://editor.swagger.io/?url=https://raw.githubusercontent.com/AepyornisNet/aepyornis/main/docs/swagger.json)
+[![Translation status](https://hosted.weblate.org/widget/aepyornis/svg-badge.svg)](https://hosted.weblate.org/engage/aepyornis/)
 
 A workout tracking web application for personal use (or family, friends), geared
 towards running and other GPX-based activities

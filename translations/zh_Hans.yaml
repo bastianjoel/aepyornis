@@ -225,7 +225,7 @@ zh-Hans:
     Try_one_of_these_sites: 试试这些网站：
     i_completed_a_workout_s: 我完成了一次锻炼：%s。
     The_workout_s_now_has_a_shareable_link: 锻炼 '%s' 现有可分享的链接
-    HelpTranslating: "我们希望您能帮助翻译！\n\n请[通过 Weblate](https://hosted.weblate.org/projects/workout-tracker/web-interface/)协助翻译\n"
+    HelpTranslating: "我们希望您能帮助翻译！\n\n请[通过 Weblate](https://hosted.weblate.org/engage/aepyornis/)协助翻译\n"
     The_shareable_link_is_deleted_for_the_workout_s: 已删除锻炼 '%s' 的可分享链接
     delete_public_share: 删除链接
     Average_cadence: 平均步频
