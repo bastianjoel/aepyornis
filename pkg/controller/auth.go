@@ -118,6 +118,11 @@ func (ac *authController) Register(c echo.Context) error {
 		req.Name = req.Username
 	}
 
+	language := req.Language
+	if language == "" {
+		language = "browser"
+	}
+
 	u := &model.User{
 		UserData: model.UserData{
 			Username: req.Username,
@@ -133,7 +138,7 @@ func (ac *authController) Register(c echo.Context) error {
 
 	u.Profile.Theme = "browser"
 	u.Profile.TotalsShow = model.WorkoutTypeRunning
-	u.Profile.Language = "browser"
+	u.Profile.Language = language
 	u.Profile.PreferredUnits.SpeedRaw = "km/h"
 	u.Profile.PreferredUnits.DistanceRaw = "km"
 	u.Profile.PreferredUnits.ElevationRaw = "m"

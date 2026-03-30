@@ -272,6 +272,7 @@ type RegisterRequest struct {
 	Username string `json:"username" form:"username"`
 	Password string `json:"password" form:"password"` //nolint:gosec
 	Name     string `json:"name" form:"name"`
+	Language string `json:"language,omitempty" form:"language"`
 }
 
 type AdminUserUpdateData struct {

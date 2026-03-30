@@ -33,10 +33,9 @@
               class="form-select form-select-sm"
               id="languageSelect"
               [(ngModel)]="selectedLanguage"
-              (change)="onLanguageChange($event)"
             >
               @for (lang of languages; track lang.code) {
-                <option [value]="lang.code">{{ lang.flag }} {{ lang.name }}</option>
+                <option [value]="lang.code">{{ lang.flag }} {{ lang.nativeName }}</option>
               }
             </select>
           </div>

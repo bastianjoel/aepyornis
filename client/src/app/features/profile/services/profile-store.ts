@@ -116,6 +116,19 @@ export class ProfileStore {
       const response = await firstValueFrom(this.api.updateProfile(payload));
       if (response?.results) {
         this.profile.set(response.results);
+
+        // Apply the language change if it's not "browser"
+        const newLang = response.results.profile.language;
+        if (newLang && newLang !== 'browser') {
+          this.translate.use(newLang);
+          localStorage.setItem('locale', newLang);
+        } else if (newLang === 'browser') {
+          // Use browser language
+          const browserLang =
+            localStorage.getItem('locale') || this.translate.getBrowserLang() || 'en';
+          this.translate.use(browserLang);
+        }
+
         this.successMessage.set(this.translate.instant('Profile updated successfully'));
         setTimeout(() => this.successMessage.set(null), 3000);
       }

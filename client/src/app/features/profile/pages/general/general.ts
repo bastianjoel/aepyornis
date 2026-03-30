@@ -3,6 +3,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { ProfileStore } from '../../services/profile-store';
+import { AVAILABLE_LANGUAGES } from '../../../../core/config/languages';
 
 @Component({
   selector: 'app-profile-general',
@@ -13,4 +14,5 @@ import { ProfileStore } from '../../services/profile-store';
 })
 export class ProfileGeneralPage {
   protected store = inject(ProfileStore);
+  protected languages = AVAILABLE_LANGUAGES;
 }

@@ -41,9 +41,9 @@
         </label>
         <select class="form-select" formControlName="language" id="language">
           <option value="browser">{{ 'Browser / System' | translate }}</option>
-          <option value="en">{{ 'English' | translate }}</option>
-          <option value="de">{{ 'German' | translate }}</option>
-          <option value="fr">{{ 'French' | translate }}</option>
+          @for (lang of languages; track lang.code) {
+            <option [value]="lang.code">{{ lang.flag }} {{ lang.nativeName }}</option>
+          }
         </select>
       </div>
 

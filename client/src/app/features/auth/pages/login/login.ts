@@ -148,12 +148,14 @@ export class Login implements OnInit {
     this.registerSubmitting.set(true);
 
     const formValue = this.registerForm.value;
+    const currentLanguage = localStorage.getItem('locale') || 'browser';
 
     this.api
       .register({
         username: String(formValue.username ?? ''),
         password: String(formValue.password ?? ''),
         name: String(formValue.username ?? ''),
+        language: currentLanguage,
       })
       .subscribe({
         next: (response) => {

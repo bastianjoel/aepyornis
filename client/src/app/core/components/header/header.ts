@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  effect,
   inject,
   input,
   LOCALE_ID,
@@ -11,12 +12,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { AppIcon } from '../app-icon/app-icon';
 import { TranslateService } from '@ngx-translate/core';
-
-type Language = {
-  code: string;
-  name: string;
-  flag: string;
-};
+import { AVAILABLE_LANGUAGES, Language } from '../../config/languages';
 
 @Component({
   selector: 'app-header',
@@ -39,27 +35,23 @@ export class Header {
 
   public readonly selectedLanguage = signal('en');
 
-  public languages: Language[] = [
-    { code: 'en', name: 'English', flag: '🇬🇧' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  ];
+  public languages: Language[] = AVAILABLE_LANGUAGES;
 
   public constructor() {
     const localeId = this.localeId;
 
     // Set the current locale from stored locale or Angular's LOCALE_ID
     const stored = localStorage.getItem('locale') || localeId;
-    this.selectedLanguage.set(stored || 'en');
-  }
+    const initialLanguage = stored || 'en';
+    this.selectedLanguage.set(initialLanguage);
 
-  public onLanguageChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const newLocale = select.value;
-    if (newLocale !== this.selectedLanguage()) {
-      localStorage.setItem('locale', newLocale);
-      this.translate.use(newLocale);
-      this.selectedLanguage.set(newLocale);
-    }
+    // Apply the initial language immediately
+    this.translate.use(initialLanguage);
+
+    effect(() => {
+      localStorage.setItem('locale', this.selectedLanguage());
+      this.translate.use(this.selectedLanguage());
+    });
   }
 
   public onToggleSidebar(): void {

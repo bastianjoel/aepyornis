@@ -47,9 +47,12 @@ export class User {
     this.userInfo.set(user);
 
     const lang = profile.language;
-    if (lang) {
+    if (lang && lang !== 'browser') {
       this.translate.use(lang);
       localStorage.setItem('locale', lang);
+    } else if (lang === 'browser') {
+      const browserLang = localStorage.getItem('locale') || this.translate.getBrowserLang() || 'en';
+      this.translate.use(browserLang);
     }
   }
 

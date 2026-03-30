@@ -11,4 +11,5 @@ export type RegisterRequest = {
   username: string;
   password: string;
   name?: string;
+  language?: string;
 };
