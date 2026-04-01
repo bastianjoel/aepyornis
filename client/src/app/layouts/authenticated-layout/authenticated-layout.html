@@ -4,6 +4,7 @@
   <div class="app-content">
     <app-header
       class="sticky-top"
+      [isAdmin]="isAdmin()"
       [showSidebar]="sidebarOpen()"
       [userName]="userName()"
       (logout)="handleLogout()"
@@ -14,6 +15,8 @@
       <router-outlet />
     </main>
 
-    <app-footer />
+    @if (!isFeedRoute()) {
+      <app-footer />
+    }
   </div>
 </div>
