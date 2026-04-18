@@ -28,6 +28,7 @@ export type AppInfo = {
   registration_disabled: boolean;
   socials_disabled: boolean;
   auto_import_enabled: boolean;
+  activity_pub_active: boolean;
 };
 
 export type UserPreferredUnits = {

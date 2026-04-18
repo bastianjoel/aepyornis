@@ -49,6 +49,10 @@ export class AppConfig {
     return this.appInfo()?.auto_import_enabled ?? false;
   }
 
+  public isActivityPubAvailable(): boolean {
+    return this.appInfo()?.activity_pub_active ?? false;
+  }
+
   public getVersion(): string {
     return this.appInfo()?.version ?? '';
   }

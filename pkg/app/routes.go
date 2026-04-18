@@ -279,6 +279,7 @@ func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 			RegistrationDisabled: a.Config.RegistrationDisabled,
 			SocialsDisabled:      a.Config.SocialsDisabled,
 			AutoImportEnabled:    a.Config.AutoImportEnabled,
+			ActivityPubActive:    a.Config.ActivityPubActive,
 		},
 	}
 

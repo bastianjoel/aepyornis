@@ -80,26 +80,6 @@
         </select>
       </div>
 
-      @if (!store.profile()!.activity_pub) {
-        <div
-          class="d-flex align-items-center justify-content-between gap-3 mt-3 pt-3 mb-3 border-top"
-        >
-          <div>
-            <div class="fw-medium">{{ 'Enable activity pub' | translate }}</div>
-            <p class="small text-muted mb-0">
-              {{ 'It cannot be disabled afterwards.' | translate }}
-            </p>
-          </div>
-          <button class="btn btn-primary" type="button" (click)="store.enableActivityPub()">
-            {{ 'Enable' | translate }}
-          </button>
-        </div>
-      } @else {
-        <div class="small text-success mt-3 pt-3 mb-3 border-top">
-          {{ 'ActivityPub is enabled' | translate }}
-        </div>
-      }
-
       <button
         class="btn btn-primary"
         type="submit"
@@ -119,6 +99,30 @@
     </div>
   </div>
 </form>
+
+@if (store.appConfig.isActivityPubAvailable()) {
+  <div class="card shadow-sm mb-4">
+    <div class="card-header">
+      <h3 class="h5 mb-0">{{ 'Activity pub' | translate }}</h3>
+    </div>
+    <div class="card-body">
+      @if (!store.profile()!.activity_pub) {
+        <div class="d-flex align-items-center justify-content-between gap-3">
+          <p class="small text-muted mb-0">
+            {{ 'It cannot be disabled afterwards.' | translate }}
+          </p>
+          <button class="btn btn-primary" type="button" (click)="store.enableActivityPub()">
+            {{ 'Enable' | translate }}
+          </button>
+        </div>
+      } @else {
+        <div class="small text-success">
+          {{ 'ActivityPub is enabled for this account' | translate }}
+        </div>
+      }
+    </div>
+  </div>
+}
 
 <div class="card shadow-sm">
   <div class="card-header">
