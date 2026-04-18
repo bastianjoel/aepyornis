@@ -62,17 +62,23 @@ export type WorkoutAttachment = {
 
 export type WorkoutDetail = {
   equipment?: Equipment[];
+  records?: WorkoutRecords;
   map_data?: MapData;
   climbs?: ClimbSegment[];
   events?: WorkoutEvent[];
   route_segment_matches?: RouteSegmentMatch[];
-  records?: WorkoutIntervalRecord[];
+  interval_bests?: WorkoutIntervalRecord[];
   laps?: WorkoutLap[];
 } & Workout;
 
 export type MapData = {
   creator: string;
   center: MapCenter;
+  extra_metrics?: string[];
+  details?: MapDataDetails;
+};
+
+export type WorkoutRecords = {
   extra_metrics?: string[];
   details?: MapDataDetails;
 };

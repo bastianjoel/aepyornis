@@ -1,7 +1,12 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../core/services/api';
-import { WorkoutDetail, WorkoutLike } from '../../../core/types/workout';
+import {
+  MapDataDetails,
+  WorkoutDetail,
+  WorkoutLike,
+  WorkoutRecords,
+} from '../../../core/types/workout';
 
 /**
  * Service responsible for managing workout data and providing common formatting utilities.
@@ -28,8 +33,34 @@ export class WorkoutDetailDataService {
     return this.hasTimeChartData() || this.hasDistanceChartData();
   });
 
+  public readonly workoutRecords = computed<WorkoutRecords | undefined>(() => {
+    const w = this.workout();
+    if (!w) {
+      return undefined;
+    }
+
+    if (w.records) {
+      return w.records;
+    }
+
+    if (!w.map_data) {
+      return undefined;
+    }
+
+    return {
+      extra_metrics: w.map_data.extra_metrics,
+      details: w.map_data.details,
+    };
+  });
+
+  public readonly recordsDetails = computed<MapDataDetails | undefined>(
+    () => this.workoutRecords()?.details,
+  );
+
+  public readonly recordsExtraMetrics = computed(() => this.workoutRecords()?.extra_metrics || []);
+
   public readonly hasTimeChartData = computed(() => {
-    const d = this.workout()?.map_data?.details;
+    const d = this.recordsDetails();
     if (!d || d.time.length === 0) {
       return false;
     }
@@ -42,7 +73,7 @@ export class WorkoutDetailDataService {
   });
 
   public readonly hasDistanceChartData = computed(() => {
-    const d = this.workout()?.map_data?.details;
+    const d = this.recordsDetails();
     if (!d || d.time.length === 0 || d.distance.length === 0) {
       return false;
     }
@@ -71,26 +102,25 @@ export class WorkoutDetailDataService {
 
   public readonly hasRecords = computed(() => {
     const w = this.workout();
-    return w?.records && w.records.length > 0;
+    return w?.interval_bests && w.interval_bests.length > 0;
   });
 
   public readonly extraMetrics = computed(() => {
-    const w = this.workout();
-    return w?.map_data?.extra_metrics || [];
+    return this.recordsExtraMetrics();
   });
 
   public readonly hasHeartRateDistribution = computed(() => {
-    const metrics = this.workout()?.map_data?.details?.extra_metrics?.['hr-zone'];
+    const metrics = this.recordsDetails()?.extra_metrics?.['hr-zone'];
     return Array.isArray(metrics) && metrics.some((value) => typeof value === 'number');
   });
 
   public readonly hasPowerDistribution = computed(() => {
-    const metrics = this.workout()?.map_data?.details?.extra_metrics?.['zone'];
+    const metrics = this.recordsDetails()?.extra_metrics?.['zone'];
     return Array.isArray(metrics) && metrics.some((value) => typeof value === 'number');
   });
 
   public readonly hasPowerData = computed(() => {
-    const metrics = this.workout()?.map_data?.details?.extra_metrics?.['power'];
+    const metrics = this.recordsDetails()?.extra_metrics?.['power'];
     return Array.isArray(metrics) && metrics.some((value) => typeof value === 'number');
   });
 

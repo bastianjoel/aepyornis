@@ -3,6 +3,7 @@ package dto
 import (
 	"fmt"
 	"math"
+	"sort"
 	"time"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
@@ -180,11 +181,12 @@ type WorkoutBreakdownItemResponse struct {
 type WorkoutDetailResponse struct {
 	WorkoutResponse
 	Equipment           []EquipmentResponse             `json:"equipment,omitempty"`
+	Records             *WorkoutRecordsResponse         `json:"records,omitempty"`
 	MapData             *MapDataResponse                `json:"map_data,omitempty"`
 	Climbs              []ClimbSegmentResponse          `json:"climbs,omitempty"`
 	Events              []WorkoutEventResponse          `json:"events,omitempty"`
 	RouteSegmentMatches []RouteSegmentMatchResponse     `json:"route_segment_matches,omitempty"`
-	Records             []WorkoutIntervalRecordResponse `json:"records,omitempty"`
+	IntervalBests       []WorkoutIntervalRecordResponse `json:"interval_bests,omitempty"`
 	Laps                []WorkoutLapResponse            `json:"laps,omitempty"`
 }
 
@@ -200,7 +202,12 @@ type WorkoutEventResponse struct {
 
 // MapDataResponse represents workout map data in API v2 responses
 type MapDataResponse struct {
-	Center       MapCenterResponse       `json:"center"`
+	Center MapCenterResponse `json:"center"`
+}
+
+// WorkoutRecordsResponse represents workout records in API v2 responses.
+// This data is independent from map metadata and can exist even without location.
+type WorkoutRecordsResponse struct {
 	ExtraMetrics []string                `json:"extra_metrics,omitempty"`
 	Details      *MapDataDetailsResponse `json:"details,omitempty"`
 }
@@ -471,7 +478,11 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 				}
 			}
 		}
+	}
 
+	wr.Records = workoutResponseRecords(w)
+
+	if w.Data != nil {
 		wr.MapData = workoutResponseMapData(w)
 	}
 
@@ -496,9 +507,9 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 	}
 
 	if len(records) > 0 {
-		wr.Records = make([]WorkoutIntervalRecordResponse, len(records))
+		wr.IntervalBests = make([]WorkoutIntervalRecordResponse, len(records))
 		for i, r := range records {
-			wr.Records[i] = WorkoutIntervalRecordResponse{
+			wr.IntervalBests[i] = WorkoutIntervalRecordResponse{
 				Label:           r.Label,
 				TargetDistance:  r.TargetDistance,
 				Distance:        r.Distance,
@@ -787,70 +798,112 @@ func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 			Lat: w.Data.Center.Lat,
 			Lng: w.Data.Center.Lng,
 		},
-		ExtraMetrics: w.ExtraMetrics,
-	}
-
-	// Add detailed points in compact format
-	if len(w.Records) > 0 {
-		points := w.Records
-		mapData.Details = &MapDataDetailsResponse{
-			Position:     make([][]float64, len(points)),
-			Time:         make([]time.Time, len(points)),
-			Distance:     make([]float64, len(points)),
-			Duration:     make([]float64, len(points)),
-			Speed:        make([]float64, len(points)),
-			Slope:        make([]float64, len(points)),
-			Elevation:    make([]float64, len(points)),
-			ExtraMetrics: make(map[string][]any),
-		}
-
-		zoneMetrics := newZoneMetricsBuilder(w)
-
-		// Initialize extra metrics arrays
-		for _, metric := range mapData.ExtraMetrics {
-			if metric == "speed" || metric == "elevation" {
-				continue
-			}
-
-			mapData.Details.ExtraMetrics[metric] = make([]any, len(points))
-		}
-
-		zoneMetrics.ensureBuffers(mapData.Details.ExtraMetrics, len(points))
-
-		for i, point := range points {
-			mapData.Details.Position[i] = []float64{point.Lat, point.Lng}
-			mapData.Details.Time[i] = point.Time
-			mapData.Details.Distance[i] = point.TotalDistance / 1000 // Convert to km
-			mapData.Details.Duration[i] = point.TotalDuration.Seconds()
-			mapData.Details.Slope[i] = point.SlopeGrade
-			mapData.Details.Elevation[i] = point.Elevation
-
-			// Calculate speed from extra metrics or derive it
-			speed := point.AverageSpeed()
-			if ems, ok := point.ExtraMetrics["speed"]; ok && ems > 0 {
-				speed = ems
-			}
-			mapData.Details.Speed[i] = speed
-
-			// Add extra metrics
-			for _, metric := range w.ExtraMetrics {
-				if metric == "speed" || metric == "elevation" {
-					continue // Already handled
-				}
-				if val, ok := point.ExtraMetrics[metric]; ok {
-					mapData.Details.ExtraMetrics[metric][i] = val
-				} else {
-					mapData.Details.ExtraMetrics[metric][i] = nil
-				}
-			}
-
-			zoneMetrics.setForPoint(i, point.ExtraMetrics)
-		}
-
-		mapData.Details.ZoneRanges = zoneMetrics.zoneRanges()
 	}
 
 	return mapData
+}
+
+func workoutResponseRecords(w *model.Workout) *WorkoutRecordsResponse {
+	if len(w.Records) == 0 {
+		return nil
+	}
+
+	recordMetrics := workoutRecordMetrics(w)
+
+	series := &WorkoutRecordsResponse{
+		ExtraMetrics: recordMetrics,
+	}
+
+	// Add detailed points in compact format
+	points := w.Records
+	series.Details = &MapDataDetailsResponse{
+		Position:     make([][]float64, len(points)),
+		Time:         make([]time.Time, len(points)),
+		Distance:     make([]float64, len(points)),
+		Duration:     make([]float64, len(points)),
+		Speed:        make([]float64, len(points)),
+		Slope:        make([]float64, len(points)),
+		Elevation:    make([]float64, len(points)),
+		ExtraMetrics: make(map[string][]any),
+	}
+
+	zoneMetrics := newZoneMetricsBuilder(w, recordMetrics)
+
+	// Initialize extra metrics arrays
+	for _, metric := range recordMetrics {
+		if metric == "speed" || metric == "elevation" {
+			continue
+		}
+
+		series.Details.ExtraMetrics[metric] = make([]any, len(points))
+	}
+
+	zoneMetrics.ensureBuffers(series.Details.ExtraMetrics, len(points))
+
+	for i, point := range points {
+		series.Details.Position[i] = []float64{point.Lat, point.Lng}
+		series.Details.Time[i] = point.Time
+		series.Details.Distance[i] = point.TotalDistance / 1000 // Convert to km
+		series.Details.Duration[i] = point.TotalDuration.Seconds()
+		series.Details.Slope[i] = point.SlopeGrade
+		series.Details.Elevation[i] = point.Elevation
+
+		// Calculate speed from extra metrics or derive it
+		speed := point.AverageSpeed()
+		if ems, ok := point.ExtraMetrics["speed"]; ok && ems > 0 {
+			speed = ems
+		}
+		series.Details.Speed[i] = speed
+
+		// Add extra metrics
+		for _, metric := range recordMetrics {
+			if metric == "speed" || metric == "elevation" {
+				continue // Already handled
+			}
+			if val, ok := point.ExtraMetrics[metric]; ok {
+				series.Details.ExtraMetrics[metric][i] = val
+			} else {
+				series.Details.ExtraMetrics[metric][i] = nil
+			}
+		}
+
+		zoneMetrics.setForPoint(i, point.ExtraMetrics)
+	}
+
+	series.Details.ZoneRanges = zoneMetrics.zoneRanges()
+
+	return series
+}
+
+func workoutRecordMetrics(w *model.Workout) []string {
+	metrics := append([]string(nil), w.ExtraMetrics...)
+	seen := make(map[string]struct{}, len(metrics))
+
+	for _, metric := range metrics {
+		if metric == "" {
+			continue
+		}
+		seen[metric] = struct{}{}
+	}
+
+	discovered := make([]string, 0)
+	for _, point := range w.Records {
+		for metric := range point.ExtraMetrics {
+			if metric == "" {
+				continue
+			}
+			if _, ok := seen[metric]; ok {
+				continue
+			}
+			seen[metric] = struct{}{}
+			discovered = append(discovered, metric)
+		}
+	}
+
+	sort.Strings(discovered)
+	metrics = append(metrics, discovered...)
+
+	return metrics
 }
 
 const (
@@ -870,9 +923,18 @@ type zoneMetricsBuilder struct {
 	ftpZones []any
 }
 
-func newZoneMetricsBuilder(w *model.Workout) *zoneMetricsBuilder {
-	if w == nil || w.Data == nil {
+func newZoneMetricsBuilder(w *model.Workout, metrics []string) *zoneMetricsBuilder {
+	if w == nil {
 		return &zoneMetricsBuilder{}
+	}
+
+	hasMetric := func(name string) bool {
+		for _, metric := range metrics {
+			if metric == name {
+				return true
+			}
+		}
+		return false
 	}
 
 	return &zoneMetricsBuilder{
@@ -881,8 +943,8 @@ func newZoneMetricsBuilder(w *model.Workout) *zoneMetricsBuilder {
 		maxHR:    0,
 		restHR:   0,
 		ftp:      0,
-		hasHR:    w.HasHeartRate(),
-		hasPower: w.HasExtraMetric("power"),
+		hasHR:    hasMetric("heart-rate"),
+		hasPower: hasMetric("power"),
 	}
 }
 
