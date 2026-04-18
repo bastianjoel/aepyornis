@@ -6,6 +6,7 @@ import (
 
 	"github.com/fsouza/slognil"
 	appassets "github.com/jovandeginste/workout-tracker/v2/assets"
+	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
 	apptranslations "github.com/jovandeginste/workout-tracker/v2/translations"
 	"github.com/stretchr/testify/assert"
@@ -68,4 +69,36 @@ func TestApp_RandomJWTErrorIdemPotent(t *testing.T) {
 
 	s2 := a.Config.JWTSecret()
 	assert.Equal(t, s1, s2)
+}
+
+func TestApp_Configure_CreatesActivityPubEnabledAdminWhenEnabled(t *testing.T) {
+	a := defaultApp(t)
+
+	t.Setenv("WT_DATABASE_DRIVER", "memory")
+	t.Setenv("WT_ACTIVITY_PUB_ACTIVE", "true")
+	require.NoError(t, a.Configure())
+
+	var admin model.User
+	require.NoError(t, a.db.Preload("Profile").First(&admin).Error)
+
+	assert.True(t, admin.Admin)
+	assert.True(t, admin.ActivityPub)
+	assert.NotEmpty(t, admin.PublicKey)
+	assert.NotEmpty(t, admin.PrivateKey)
+	assert.Equal(t, model.WorkoutVisibilityFollowers, admin.Profile.DefaultWorkoutVisibility)
+}
+
+func TestApp_Configure_CreatesPrivateAdminDefaultsWhenActivityPubDisabled(t *testing.T) {
+	a := defaultApp(t)
+
+	t.Setenv("WT_DATABASE_DRIVER", "memory")
+	t.Setenv("WT_ACTIVITY_PUB_ACTIVE", "false")
+	require.NoError(t, a.Configure())
+
+	var admin model.User
+	require.NoError(t, a.db.Preload("Profile").First(&admin).Error)
+
+	assert.True(t, admin.Admin)
+	assert.False(t, admin.ActivityPub)
+	assert.Equal(t, model.WorkoutVisibilityPrivate, admin.Profile.DefaultWorkoutVisibility)
 }

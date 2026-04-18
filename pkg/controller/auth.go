@@ -139,6 +139,15 @@ func (ac *authController) Register(c echo.Context) error {
 	u.Profile.ResetDefaults()
 	u.Profile.Language = language
 
+	if ac.context.GetConfig().ActivityPubActive {
+		u.ActivityPub = true
+		u.Profile.DefaultWorkoutVisibility = model.WorkoutVisibilityFollowers
+
+		if err := u.GenerateActivityPubKeys(false); err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+	}
+
 	if err := u.Create(ac.context.GetDB()); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
