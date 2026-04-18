@@ -95,7 +95,7 @@
               <div class="map-container">
                 <app-workout-map
                   [center]="dataService.workout()!.map_data!.center"
-                  [mapData]="dataService.workout()!.map_data!.details"
+                  [mapData]="dataService.recordsDetails()"
                 />
               </div>
             </div>
@@ -113,8 +113,8 @@
                     <ng-template ngbNavContent>
                       <div class="chart-container">
                         <app-workout-chart
-                          [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-                          [mapData]="dataService.workout()!.map_data!.details"
+                          [extraMetrics]="dataService.recordsExtraMetrics()"
+                          [mapData]="dataService.recordsDetails()"
                         />
                       </div>
                     </ng-template>
@@ -126,8 +126,8 @@
                     <ng-template ngbNavContent>
                       <div class="chart-container">
                         <app-workout-chart
-                          [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
-                          [mapData]="dataService.workout()!.map_data!.details"
+                          [extraMetrics]="dataService.recordsExtraMetrics()"
+                          [mapData]="dataService.recordsDetails()"
                           [viewMode]="'distance'"
                         />
                       </div>
@@ -148,7 +148,7 @@
                     <ng-template ngbNavContent>
                       <app-workout-zone-distribution
                         type="heart-rate"
-                        [mapData]="dataService.workout()!.map_data!.details"
+                        [mapData]="dataService.recordsDetails()"
                       />
                     </ng-template>
                   </li>
@@ -159,7 +159,7 @@
                     <ng-template ngbNavContent>
                       <app-workout-zone-distribution
                         type="power"
-                        [mapData]="dataService.workout()!.map_data!.details"
+                        [mapData]="dataService.recordsDetails()"
                       />
                     </ng-template>
                   </li>
@@ -169,9 +169,7 @@
                     <button ngbNavLink>{{ 'Performance curve' | translate }}</button>
                     <ng-template ngbNavContent>
                       <div class="chart-container">
-                        <app-workout-performance-curve
-                          [mapData]="dataService.workout()!.map_data!.details"
-                        />
+                        <app-workout-performance-curve [mapData]="dataService.recordsDetails()" />
                       </div>
                     </ng-template>
                   </li>
@@ -195,7 +193,7 @@
                   <button ngbNavLink>{{ 'Breakdown' | translate }}</button>
                   <ng-template ngbNavContent>
                     <app-workout-breakdown
-                      [extraMetrics]="dataService.workout()!.map_data!.extra_metrics || []"
+                      [extraMetrics]="dataService.recordsExtraMetrics()"
                       [totalDistance]="dataService.workout()!.total_distance"
                       [workoutId]="dataService.workout()!.id"
                     />
@@ -230,7 +228,7 @@
                   <li ngbNavItem>
                     <button ngbNavLink>{{ 'Records' | translate }}</button>
                     <ng-template ngbNavContent>
-                      <app-workout-records [records]="dataService.workout()!.records!" />
+                      <app-workout-records [records]="dataService.workout()!.interval_bests!" />
                     </ng-template>
                   </li>
                 }
