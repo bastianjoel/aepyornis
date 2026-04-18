@@ -2,6 +2,7 @@ package converters
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -13,9 +14,11 @@ import (
 	"github.com/muktihari/fit/kit/datetime"
 	"github.com/muktihari/fit/kit/semicircles"
 	"github.com/muktihari/fit/profile/filedef"
+	"github.com/muktihari/fit/profile/mesgdef"
 	"github.com/muktihari/fit/profile/typedef"
 	"github.com/spf13/cast"
 	"github.com/tkrajina/gpxgo/gpx"
+	"gorm.io/datatypes"
 )
 
 func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
@@ -34,43 +37,61 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 	activityTime := fitActivityStartTime(act)
 
 	gpxFile := buildGPXFromActivity(act)
-	data := mapDataFromActivity(act, gpxFile)
+	data, records := mapDataFromActivity(act, gpxFile)
+	events := parseWorkoutEvents(act)
 	laps := parseLaps(act)
 	stats := parseWorkoutStats(act)
+	_, totalDistance2D, _ := model.WorkoutTotalsFromRecords(records)
 
 	workouts := make([]*model.Workout, 0, len(act.Sessions))
 
 	for _, session := range act.Sessions {
 		startTime := firstNonZeroTime(session.StartTime.Local(), activityTime)
 
-		moveDuration := durationFromSeconds(session.TotalTimerTimeScaled())
-		elapsedDuration := durationFromSeconds(session.TotalElapsedTimeScaled())
-		pauseDuration := maxDuration(elapsedDuration-moveDuration, 0)
+		elapsedDuration, _, pauseDuration := deriveFitSessionDurations(
+			session.TotalElapsedTime,
+			session.TotalElapsedTimeScaled(),
+			session.TotalTimerTime,
+			session.TotalTimerTimeScaled(),
+			laps,
+			records,
+		)
+
+		clonedData := cloneMapData(data)
+		if clonedData == nil {
+			clonedData = &model.WorkoutGeoMeta{}
+		}
+
+		workoutType, found := model.WorkoutTypeFromData(session.Sport.String())
+		customType := ""
+		if !found {
+			customType = session.Sport.String()
+		}
+		workoutName := formatFitWorkoutName(session.Sport.String(), startTime)
+		subType := ""
+		if session.SubSport != typedef.SubSportInvalid {
+			subType = session.SubSport.String()
+		}
 
 		w := &model.Workout{
-			Data: cloneMapData(data),
-			Date: startTime,
+			Data:            clonedData,
+			Stats:           &stats,
+			Date:            startTime,
+			DateEnd:         startTime.Add(elapsedDuration),
+			Name:            workoutName,
+			Creator:         act.FileId.Manufacturer.String(),
+			Type:            workoutType,
+			SubType:         subType,
+			CustomType:      customType,
+			Records:         append([]model.WorkoutRecord(nil), records...),
+			Events:          append([]model.WorkoutEvent(nil), events...),
+			TotalDistance:   session.TotalDistanceScaled(),
+			TotalDistance2D: totalDistance2D,
+			TotalDuration:   elapsedDuration,
+			PauseDuration:   pauseDuration,
 		}
 
-		if w.Data != nil {
-			w.Data.WorkoutData.MergeNonZero(model.WorkoutData{
-				Name:          formatFitWorkoutName(session.Sport.String(), startTime),
-				Type:          session.Sport.String(),
-				Start:         startTime,
-				Stop:          startTime.Add(elapsedDuration),
-				TotalDistance: session.TotalDistanceScaled(),
-				TotalDuration: elapsedDuration,
-				PauseDuration: pauseDuration,
-				WorkoutStats:  stats,
-				Laps:          laps,
-			})
-		}
-
-		if session.SubSport != typedef.SubSportInvalid {
-			w.Data.WorkoutData.SubType = session.SubSport.String()
-		}
-
-		w.Name = w.Data.WorkoutData.Name
+		w.Laps = append([]model.WorkoutLap(nil), laps...)
 		setContentAndName(w, filename, "fit", content)
 		w.UpdateAverages()
 		w.UpdateExtraMetrics()
@@ -79,6 +100,84 @@ func ParseFit(content []byte, filename string) ([]*model.Workout, error) {
 	}
 
 	return workouts, nil
+}
+
+func parseWorkoutEvents(act *filedef.Activity) []model.WorkoutEvent {
+	if act == nil || len(act.Events) == 0 {
+		return nil
+	}
+
+	events := make([]model.WorkoutEvent, 0, len(act.Events))
+
+	for _, e := range act.Events {
+		if e == nil {
+			continue
+		}
+
+		ts := e.Timestamp.Local()
+		if !fitTimeIsValid(ts) {
+			continue
+		}
+
+		events = append(events, model.WorkoutEvent{
+			Timestamp:      ts,
+			StartTimestamp: e.StartTimestamp.Local(),
+			Event:          e.Event.String(),
+			EventType:      e.EventType.String(),
+			EventGroup:     e.EventGroup,
+			Payload:        buildFitEventPayload(e),
+		})
+	}
+
+	return events
+}
+
+func buildFitEventPayload(e *mesgdef.Event) datatypes.JSON {
+	if e == nil {
+		return nil
+	}
+
+	event := e.Event.String()
+	switch event {
+	case "timer":
+		triggerType := typedef.TimerTrigger(e.Data)
+		if triggerType == typedef.TimerTriggerInvalid {
+			return nil
+		}
+
+		return mustJSONPayload(struct {
+			Trigger string `json:"trigger"`
+		}{
+			Trigger: triggerType.String(),
+		})
+	case "front_gear_change":
+		return mustJSONPayload(struct {
+			FrontGearNum uint8 `json:"front_gear_num"`
+			FrontGear    uint8 `json:"front_gear"`
+		}{
+			FrontGearNum: e.FrontGearNum,
+			FrontGear:    e.FrontGear,
+		})
+	case "rear_gear_change":
+		return mustJSONPayload(struct {
+			RearGearNum uint8 `json:"rear_gear_num"`
+			RearGear    uint8 `json:"rear_gear"`
+		}{
+			RearGearNum: e.RearGearNum,
+			RearGear:    e.RearGear,
+		})
+	default:
+		return nil
+	}
+}
+
+func mustJSONPayload(v any) datatypes.JSON {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+
+	return datatypes.JSON(b)
 }
 
 //gocyclo:ignore
@@ -188,7 +287,7 @@ func parseLaps(act *filedef.Activity) []model.WorkoutLap {
 			TotalDistance: totalDistance,
 			TotalDuration: elapsed,
 			PauseDuration: pause,
-			WorkoutStats: model.WorkoutStats{
+			Stats: &model.WorkoutStats{
 				MinElevation:        minElevation,
 				MaxElevation:        maxElevation,
 				TotalUp:             totalUp,
@@ -278,6 +377,84 @@ func durationFromSeconds(seconds float64) time.Duration {
 	return time.Duration(seconds * float64(time.Second))
 }
 
+func durationFromFITUint32(raw uint32, scaled float64) time.Duration {
+	if raw == math.MaxUint32 {
+		return 0
+	}
+
+	return durationFromSeconds(scaled)
+}
+
+func sumLapElapsedDuration(laps []model.WorkoutLap) time.Duration {
+	total := time.Duration(0)
+	for _, lap := range laps {
+		total += lap.TotalDuration
+	}
+
+	return total
+}
+
+func sumLapMovingDuration(laps []model.WorkoutLap) time.Duration {
+	total := time.Duration(0)
+	for _, lap := range laps {
+		total += maxDuration(lap.TotalDuration-lap.PauseDuration, 0)
+	}
+
+	return total
+}
+
+func movingDurationFromRecords(records []model.WorkoutRecord) time.Duration {
+	if len(records) < 2 {
+		return 0
+	}
+
+	stats, ok := model.StatsForRange(records, 0, len(records)-1)
+	if !ok {
+		return 0
+	}
+
+	return stats.MovingDuration
+}
+
+func elapsedDurationFromRecords(records []model.WorkoutRecord) time.Duration {
+	_, _, duration := model.WorkoutTotalsFromRecords(records)
+
+	return duration
+}
+
+func deriveFitSessionDurations(
+	totalElapsedRaw uint32,
+	totalElapsedScaled float64,
+	totalTimerRaw uint32,
+	totalTimerScaled float64,
+	laps []model.WorkoutLap,
+	records []model.WorkoutRecord,
+) (time.Duration, time.Duration, time.Duration) {
+	elapsed := durationFromFITUint32(totalElapsedRaw, totalElapsedScaled)
+	if elapsed == 0 {
+		elapsed = sumLapElapsedDuration(laps)
+	}
+	if elapsed == 0 {
+		elapsed = elapsedDurationFromRecords(records)
+	}
+
+	moving := durationFromFITUint32(totalTimerRaw, totalTimerScaled)
+	if moving == 0 {
+		moving = sumLapMovingDuration(laps)
+	}
+	if moving == 0 {
+		moving = movingDurationFromRecords(records)
+	}
+
+	if elapsed > 0 && moving > elapsed {
+		moving = elapsed
+	}
+
+	pause := maxDuration(elapsed-moving, 0)
+
+	return elapsed, moving, pause
+}
+
 func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
 	name := formatFitWorkoutName(act.Sessions[0].Sport.String(), fitActivityStartTime(act))
 	gpxFile := &gpx.GPX{
@@ -355,11 +532,11 @@ func buildGPXFromActivity(act *filedef.Activity) *gpx.GPX {
 // mapDataFromActivity converts a FIT activity into MapData, falling back to
 // non-positional record data when coordinates are missing so charts and
 // breakdowns remain available even without a map.
-func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *model.MapData {
-	data := model.MapDataFromGPX(gpxFile)
+func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) (*model.WorkoutGeoMeta, []model.WorkoutRecord) {
+	data, records := model.MapDataAndRecordsFromGPX(gpxFile)
 
-	if data != nil && data.Details != nil && len(data.Details.Points) > 0 {
-		return data
+	if data != nil && len(records) > 0 {
+		return data, records
 	}
 
 	return buildMapDataWithoutPositions(act)
@@ -371,25 +548,18 @@ func mapDataFromActivity(act *filedef.Activity, gpxFile *gpx.GPX) *model.MapData
 // and breakdowns.
 //
 //nolint:gocyclo // branching covers optional FIT metrics without positions
-func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
+func buildMapDataWithoutPositions(act *filedef.Activity) (*model.WorkoutGeoMeta, []model.WorkoutRecord) {
 	if act == nil || len(act.Records) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	points := make([]model.MapPoint, 0, len(act.Records))
+	points := make([]model.WorkoutRecord, 0, len(act.Records))
 
 	var (
-		totalDistance float64
 		totalDuration time.Duration
-		pauseDuration time.Duration
-		maxSpeed      float64
-		minElevation  = math.MaxFloat64
-		maxElevation  = -math.MaxFloat64
 		prevTime      time.Time
 		prevDistance  float64
 	)
-
-	startTime := fitActivityStartTime(act)
 
 	for i, r := range act.Records {
 		ts := r.Timestamp.Local()
@@ -420,7 +590,6 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 		}
 		prevTime = ts
 
-		totalDistance = dist
 		totalDuration += dt
 
 		speed := 0.0
@@ -429,25 +598,11 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 		} else if r.Speed != math.MaxUint16 {
 			speed = r.SpeedScaled()
 		}
-		maxSpeed = math.Max(maxSpeed, speed)
-
-		if speed*3.6 < 1.0 {
-			pauseDuration += dt
-		}
-
 		elevation := math.NaN()
 		if r.EnhancedAltitude != math.MaxUint32 {
 			elevation = r.EnhancedAltitudeScaled()
 		} else if r.Altitude != math.MaxUint16 {
 			elevation = r.AltitudeScaled()
-		}
-		if !math.IsNaN(elevation) {
-			if elevation < minElevation {
-				minElevation = elevation
-			}
-			if elevation > maxElevation {
-				maxElevation = elevation
-			}
 		}
 
 		extra := model.ExtraMetrics{}
@@ -480,7 +635,7 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 			elevationValue = 0
 		}
 
-		points = append(points, model.MapPoint{
+		points = append(points, model.WorkoutRecord{
 			Time:          ts,
 			Lat:           0,
 			Lng:           0,
@@ -495,51 +650,14 @@ func buildMapDataWithoutPositions(act *filedef.Activity) *model.MapData {
 
 	// If no points survived, bail out to avoid empty details
 	if len(points) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	// Normalize elevation bounds when none are present
-	if minElevation == math.MaxFloat64 {
-		minElevation = 0
-	}
-	if maxElevation == -math.MaxFloat64 {
-		maxElevation = 0
-	}
+	data := &model.WorkoutGeoMeta{Center: model.MapCenter{}}
 
-	data := &model.MapData{
-		Creator: act.FileId.Manufacturer.String(),
-		Center:  model.MapCenter{},
-		Details: &model.MapDataDetails{Points: points},
-		WorkoutData: model.WorkoutData{
-			Start:         startTime,
-			Stop:          points[len(points)-1].Time,
-			TotalDistance: totalDistance,
-			TotalDuration: totalDuration,
-			PauseDuration: pauseDuration,
-			WorkoutStats: model.WorkoutStats{
-				MinElevation:        minElevation,
-				MaxElevation:        maxElevation,
-				AverageSpeed:        safeDivide(totalDistance, totalDuration),
-				AverageSpeedNoPause: safeDivide(totalDistance, totalDuration-pauseDuration),
-				MaxSpeed:            maxSpeed,
-			},
-		},
-	}
+	data.UpdateExtraMetrics(points)
 
-	// Populate workout type/name from the first session when available
-	if len(act.Sessions) > 0 {
-		s := act.Sessions[0]
-		data.WorkoutData.Type = s.Sport.String()
-		data.WorkoutData.SubType = s.SubSport.String()
-		if data.WorkoutData.Name == "" {
-			data.WorkoutData.Name = formatFitWorkoutName(s.Sport.String(), startTime)
-		}
-	}
-
-	data.UpdateExtraMetrics()
-	sanitizeMapData(data)
-
-	return data
+	return data, points
 }
 
 func safeDivide(distance float64, d time.Duration) float64 {
@@ -549,41 +667,12 @@ func safeDivide(distance float64, d time.Duration) float64 {
 	return distance / d.Seconds()
 }
 
-func sanitizeMapData(data *model.MapData) {
-	if data == nil {
-		return
-	}
-
-	if math.IsNaN(data.MinElevation) {
-		data.MinElevation = 0
-	}
-
-	if math.IsNaN(data.MaxElevation) {
-		data.MaxElevation = 0
-	}
-
-	if math.IsNaN(data.TotalDistance) {
-		data.TotalDistance = 0
-	}
-
-	if math.IsNaN(data.TotalDown) {
-		data.TotalDown = 0
-	}
-
-	if math.IsNaN(data.TotalUp) {
-		data.TotalUp = 0
-	}
-}
-
-func cloneMapData(src *model.MapData) *model.MapData {
+func cloneMapData(src *model.WorkoutGeoMeta) *model.WorkoutGeoMeta {
 	if src == nil {
-		return &model.MapData{}
+		return &model.WorkoutGeoMeta{}
 	}
 
 	clone := *src
-	if src.Details != nil {
-		clone.Details = &model.MapDataDetails{Points: src.Details.Points}
-	}
 
 	return &clone
 }

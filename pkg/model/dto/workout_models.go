@@ -7,6 +7,7 @@ import (
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
+	"gorm.io/datatypes"
 )
 
 // WorkoutResponse represents a workout in API v2 responses
@@ -18,6 +19,7 @@ type WorkoutResponse struct {
 	Notes                string                  `json:"notes"`
 	Type                 string                  `json:"type"`
 	SubType              string                  `json:"sub_type"`
+	Creator              string                  `json:"creator,omitempty"`
 	CustomType           string                  `json:"custom_type,omitempty"`
 	UserID               uint64                  `json:"user_id"`
 	User                 *UserProfileResponse    `json:"user,omitempty"`
@@ -180,14 +182,24 @@ type WorkoutDetailResponse struct {
 	Equipment           []EquipmentResponse             `json:"equipment,omitempty"`
 	MapData             *MapDataResponse                `json:"map_data,omitempty"`
 	Climbs              []ClimbSegmentResponse          `json:"climbs,omitempty"`
+	Events              []WorkoutEventResponse          `json:"events,omitempty"`
 	RouteSegmentMatches []RouteSegmentMatchResponse     `json:"route_segment_matches,omitempty"`
 	Records             []WorkoutIntervalRecordResponse `json:"records,omitempty"`
 	Laps                []WorkoutLapResponse            `json:"laps,omitempty"`
 }
 
+// WorkoutEventResponse represents parsed workout event data.
+type WorkoutEventResponse struct {
+	Timestamp      time.Time      `json:"timestamp"`
+	StartTimestamp time.Time      `json:"start_timestamp"`
+	Event          string         `json:"event"`
+	EventType      string         `json:"event_type"`
+	EventGroup     uint8          `json:"event_group"`
+	Payload        datatypes.JSON `json:"payload,omitempty"`
+}
+
 // MapDataResponse represents workout map data in API v2 responses
 type MapDataResponse struct {
-	Creator      string                  `json:"creator,omitempty"`
 	Center       MapCenterResponse       `json:"center"`
 	ExtraMetrics []string                `json:"extra_metrics,omitempty"`
 	Details      *MapDataDetailsResponse `json:"details,omitempty"`
@@ -292,6 +304,7 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 		Name:            w.Name,
 		Notes:           w.Notes,
 		Type:            string(w.Type),
+		Creator:         w.Creator,
 		CustomType:      w.CustomType,
 		UserID:          w.UserID,
 		Visibility:      w.Visibility,
@@ -311,34 +324,33 @@ func NewWorkoutResponse(w *model.Workout) WorkoutResponse {
 
 	// Add map data if available
 	if w.Data != nil {
-		wr.SubType = w.Data.SubType
 		wr.AddressString = w.Data.AddressString
-		wr.TotalDistance = &w.Data.TotalDistance
-
-		// Convert durations to seconds (int64)
-		totalDurationSecs := int64(w.Data.TotalDuration.Seconds())
-		wr.TotalDuration = &totalDurationSecs
-
-		wr.TotalWeight = &w.Data.TotalWeight
-		wr.TotalRepetitions = &w.Data.TotalRepetitions
-		wr.TotalUp = &w.Data.TotalUp
-		wr.TotalDown = &w.Data.TotalDown
-		wr.AverageSpeed = &w.Data.AverageSpeed
-		wr.AverageSpeedNoPause = &w.Data.AverageSpeedNoPause
-		wr.MaxSpeed = &w.Data.MaxSpeed
-		wr.MinElevation = &w.Data.MinElevation
-		wr.MaxElevation = &w.Data.MaxElevation
-		wr.AverageCadence = &w.Data.AverageCadence
-		wr.MaxCadence = &w.Data.MaxCadence
-		wr.AverageHeartRate = &w.Data.AverageHeartRate
-		wr.MaxHeartRate = &w.Data.MaxHeartRate
-		wr.AveragePower = &w.Data.AveragePower
-		wr.MaxPower = &w.Data.MaxPower
-
-		// Convert pause duration to seconds (int64)
-		pauseDurationSecs := int64(w.Data.PauseDuration.Seconds())
-		wr.PauseDuration = &pauseDurationSecs
 	}
+
+	if w.Stats != nil {
+		wr.TotalUp = &w.Stats.TotalUp
+		wr.TotalDown = &w.Stats.TotalDown
+		wr.AverageSpeed = &w.Stats.AverageSpeed
+		wr.AverageSpeedNoPause = &w.Stats.AverageSpeedNoPause
+		wr.MaxSpeed = &w.Stats.MaxSpeed
+		wr.MinElevation = &w.Stats.MinElevation
+		wr.MaxElevation = &w.Stats.MaxElevation
+		wr.AverageCadence = &w.Stats.AverageCadence
+		wr.MaxCadence = &w.Stats.MaxCadence
+		wr.AverageHeartRate = &w.Stats.AverageHeartRate
+		wr.MaxHeartRate = &w.Stats.MaxHeartRate
+		wr.AveragePower = &w.Stats.AveragePower
+		wr.MaxPower = &w.Stats.MaxPower
+	}
+
+	wr.SubType = w.SubType
+	wr.TotalDistance = &w.TotalDistance
+	totalDurationSecs := int64(w.TotalDuration.Seconds())
+	wr.TotalDuration = &totalDurationSecs
+	wr.TotalWeight = &w.TotalWeight
+	wr.TotalRepetitions = &w.TotalRepetitions
+	pauseDurationSecs := int64(w.PauseDuration.Seconds())
+	wr.PauseDuration = &pauseDurationSecs
 
 	if len(w.Attachments) > 0 {
 		wr.Attachments = make([]WorkoutAttachmentItem, 0, len(w.Attachments))
@@ -378,27 +390,27 @@ func NewWorkoutPopupData(w *model.Workout) WorkoutPopupData {
 	}
 
 	// Add type-specific fields
-	if w.Type.IsDistance() && w.Data != nil {
-		popup.TotalDistance = &w.Data.TotalDistance
+	if w.Type.IsDistance() {
+		popup.TotalDistance = &w.TotalDistance
 	}
 
-	if w.Type.IsDuration() && w.Data != nil {
-		duration := int64(w.Data.TotalDuration.Seconds())
+	if w.Type.IsDuration() {
+		duration := int64(w.TotalDuration.Seconds())
 		popup.TotalDuration = &duration
 	}
 
-	if w.Type.IsRepetition() && w.Data != nil {
-		popup.TotalRepetitions = &w.Data.TotalRepetitions
+	if w.Type.IsRepetition() {
+		popup.TotalRepetitions = &w.TotalRepetitions
 		repFreq := w.RepetitionFrequencyPerMinute()
 		popup.RepetitionFrequencyPerMin = &repFreq
 	}
 
-	if w.Type.IsWeight() && w.Data != nil {
-		popup.TotalWeight = &w.Data.TotalWeight
+	if w.Type.IsWeight() {
+		popup.TotalWeight = &w.TotalWeight
 	}
 
-	if w.Type.IsDistance() && w.Type.IsDuration() && w.Data != nil {
-		popup.AverageSpeed = &w.Data.AverageSpeed
+	if w.Type.IsDistance() && w.Type.IsDuration() && w.Stats != nil {
+		popup.AverageSpeed = &w.Stats.AverageSpeed
 	}
 
 	return popup
@@ -420,16 +432,27 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 		}
 	}
 
+	if len(w.Events) > 0 {
+		wr.Events = make([]WorkoutEventResponse, len(w.Events))
+		for i, e := range w.Events {
+			wr.Events[i] = WorkoutEventResponse{
+				Timestamp:      e.Timestamp,
+				StartTimestamp: e.StartTimestamp,
+				Event:          e.Event,
+				EventType:      e.EventType,
+				EventGroup:     e.EventGroup,
+				Payload:        e.Payload,
+			}
+		}
+	}
+
 	// Add map data with details
 	if w.Data != nil {
 		// Add climbs
-		if len(w.Data.Climbs) > 0 {
-			wr.Climbs = make([]ClimbSegmentResponse, len(w.Data.Climbs))
-			var points []model.MapPoint
-			if w.Data.Details != nil {
-				points = w.Data.Details.Points
-			}
-			for i, climb := range w.Data.Climbs {
+		if len(w.Climbs) > 0 {
+			wr.Climbs = make([]ClimbSegmentResponse, len(w.Climbs))
+			points := w.Records
+			for i, climb := range w.Climbs {
 				duration := 0.0
 				if len(points) > 0 && climb.StartIdx >= 0 && climb.EndIdx >= climb.StartIdx && climb.EndIdx < len(points) {
 					duration = (points[climb.EndIdx].TotalDuration - points[climb.StartIdx].TotalDuration).Seconds()
@@ -468,8 +491,8 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 		}
 	}
 
-	if w.Data != nil && len(w.Data.Laps) > 1 {
-		wr.Laps = NewWorkoutLapResponses(w.Data.Laps)
+	if len(w.Laps) > 1 {
+		wr.Laps = NewWorkoutLapResponses(w.Laps)
 	}
 
 	if len(records) > 0 {
@@ -480,7 +503,7 @@ func NewWorkoutDetailResponse(w *model.Workout, records []model.WorkoutIntervalR
 				TargetDistance:  r.TargetDistance,
 				Distance:        r.Distance,
 				DurationSeconds: r.DurationSeconds,
-				AverageSpeed:    r.AverageSpeed,
+				AverageSpeed:    r.Average,
 				StartIndex:      r.StartIndex,
 				EndIndex:        r.EndIndex,
 				Rank:            r.Rank,
@@ -498,32 +521,37 @@ func NewWorkoutLapResponses(laps []model.WorkoutLap) []WorkoutLapResponse {
 
 	resp := make([]WorkoutLapResponse, len(laps))
 	for i, lap := range laps {
+		stats := lap.Stats
+		if stats == nil {
+			stats = &model.WorkoutStats{}
+		}
+
 		resp[i] = WorkoutLapResponse{
 			Start:               lap.Start,
 			Stop:                lap.Stop,
 			TotalDistance:       lap.TotalDistance,
 			TotalDuration:       int64(lap.TotalDuration.Seconds()),
 			PauseDuration:       int64(lap.PauseDuration.Seconds()),
-			MinElevation:        lap.MinElevation,
-			MaxElevation:        lap.MaxElevation,
-			TotalUp:             lap.TotalUp,
-			TotalDown:           lap.TotalDown,
-			AverageSpeed:        lap.AverageSpeed,
-			AverageSpeedNoPause: lap.AverageSpeedNoPause,
-			MaxSpeed:            lap.MaxSpeed,
-			AverageCadence:      lap.AverageCadence,
-			MaxCadence:          lap.MaxCadence,
-			AverageHeartRate:    lap.AverageHeartRate,
-			MaxHeartRate:        lap.MaxHeartRate,
-			AveragePower:        lap.AveragePower,
-			MaxPower:            lap.MaxPower,
+			MinElevation:        stats.MinElevation,
+			MaxElevation:        stats.MaxElevation,
+			TotalUp:             stats.TotalUp,
+			TotalDown:           stats.TotalDown,
+			AverageSpeed:        stats.AverageSpeed,
+			AverageSpeedNoPause: stats.AverageSpeedNoPause,
+			MaxSpeed:            stats.MaxSpeed,
+			AverageCadence:      stats.AverageCadence,
+			MaxCadence:          stats.MaxCadence,
+			AverageHeartRate:    stats.AverageHeartRate,
+			MaxHeartRate:        stats.MaxHeartRate,
+			AveragePower:        stats.AveragePower,
+			MaxPower:            stats.MaxPower,
 		}
 	}
 
 	return resp
 }
 
-func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.MapPoint, units *model.UserPreferredUnits) []WorkoutBreakdownItemResponse {
+func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.WorkoutRecord, units *model.UserPreferredUnits) []WorkoutBreakdownItemResponse {
 	if len(laps) == 0 {
 		return nil
 	}
@@ -531,6 +559,11 @@ func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.Ma
 	items := make([]WorkoutBreakdownItemResponse, len(laps))
 
 	for i, lap := range laps {
+		stats := lap.Stats
+		if stats == nil {
+			stats = &model.WorkoutStats{}
+		}
+
 		startIdx := findClosestPointIndex(points, lap.Start)
 		endIdx := findClosestPointIndex(points, lap.Stop)
 
@@ -553,19 +586,19 @@ func NewWorkoutBreakdownItemsFromLaps(laps []model.WorkoutLap, points []model.Ma
 			Distance:            convertedDistance,
 			Duration:            movingDuration,
 			AveragePace:         pace,
-			MinElevation:        convertElevationToPreferred(lap.MinElevation, units),
-			MaxElevation:        convertElevationToPreferred(lap.MaxElevation, units),
-			TotalUp:             convertElevationToPreferred(lap.TotalUp, units),
-			TotalDown:           convertElevationToPreferred(lap.TotalDown, units),
-			AverageSpeed:        convertSpeedToPreferred(lap.AverageSpeedNoPause, units),
-			AverageSpeedNoPause: convertSpeedToPreferred(lap.AverageSpeed, units),
-			MaxSpeed:            convertSpeedToPreferred(lap.MaxSpeed, units),
-			AverageCadence:      lap.AverageCadence,
-			MaxCadence:          lap.MaxCadence,
-			AverageHeartRate:    lap.AverageHeartRate,
-			MaxHeartRate:        lap.MaxHeartRate,
-			AveragePower:        lap.AveragePower,
-			MaxPower:            lap.MaxPower,
+			MinElevation:        convertElevationToPreferred(stats.MinElevation, units),
+			MaxElevation:        convertElevationToPreferred(stats.MaxElevation, units),
+			TotalUp:             convertElevationToPreferred(stats.TotalUp, units),
+			TotalDown:           convertElevationToPreferred(stats.TotalDown, units),
+			AverageSpeed:        convertSpeedToPreferred(stats.AverageSpeedNoPause, units),
+			AverageSpeedNoPause: convertSpeedToPreferred(stats.AverageSpeed, units),
+			MaxSpeed:            convertSpeedToPreferred(stats.MaxSpeed, units),
+			AverageCadence:      stats.AverageCadence,
+			MaxCadence:          stats.MaxCadence,
+			AverageHeartRate:    stats.AverageHeartRate,
+			MaxHeartRate:        stats.MaxHeartRate,
+			AveragePower:        stats.AveragePower,
+			MaxPower:            stats.MaxPower,
 		}
 	}
 
@@ -725,7 +758,7 @@ func NewWorkoutRangeStatsResponse(stats model.MapDataRangeStats, startIdx, endId
 	return resp
 }
 
-func findClosestPointIndex(points []model.MapPoint, t time.Time) int {
+func findClosestPointIndex(points []model.WorkoutRecord, t time.Time) int {
 	if len(points) == 0 || t.IsZero() {
 		return -1
 	}
@@ -749,18 +782,17 @@ func findClosestPointIndex(points []model.MapPoint, t time.Time) int {
 
 func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 	mapData := &MapDataResponse{
-		Creator: w.Data.Creator,
 		Center: MapCenterResponse{
 			TZ:  w.Data.Center.TZ,
 			Lat: w.Data.Center.Lat,
 			Lng: w.Data.Center.Lng,
 		},
-		ExtraMetrics: w.Data.ExtraMetrics,
+		ExtraMetrics: w.ExtraMetrics,
 	}
 
 	// Add detailed points in compact format
-	if w.Data.Details != nil && len(w.Data.Details.Points) > 0 {
-		points := w.Data.Details.Points
+	if len(w.Records) > 0 {
+		points := w.Records
 		mapData.Details = &MapDataDetailsResponse{
 			Position:     make([][]float64, len(points)),
 			Time:         make([]time.Time, len(points)),
@@ -801,7 +833,7 @@ func workoutResponseMapData(w *model.Workout) *MapDataResponse {
 			mapData.Details.Speed[i] = speed
 
 			// Add extra metrics
-			for _, metric := range w.Data.ExtraMetrics {
+			for _, metric := range w.ExtraMetrics {
 				if metric == "speed" || metric == "elevation" {
 					continue // Already handled
 				}

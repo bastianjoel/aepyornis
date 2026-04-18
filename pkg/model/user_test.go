@@ -26,8 +26,8 @@ func defaultUser() *User {
 	}
 }
 
-func dummyMapData() *MapData {
-	return &MapData{Creator: "tester"}
+func dummyMapData() *WorkoutGeoMeta {
+	return &WorkoutGeoMeta{}
 }
 
 func createMemoryDB(t *testing.T) *gorm.DB {

@@ -38,7 +38,7 @@ type RouteSegment struct {
 	AddressString string       `json:"addressString"`                     // The generic location of the workout
 	Filename      string       `json:"filename"`                          // The filename of the file
 
-	Points []MapPoint `gorm:"serializer:json" json:"points"` // The GPS points of the workout
+	Points []WorkoutRecord `gorm:"serializer:json" json:"points"` // The GPS points of the workout
 
 	Content             []byte               `gorm:"type:bytes" json:"content"`            // The file content
 	Checksum            []byte               `gorm:"not null;uniqueIndex" json:"checksum"` // The checksum of the content
@@ -85,7 +85,7 @@ func NewRouteSegment(notes string, filename string, content []byte) (*RouteSegme
 }
 
 func RouteSegmentFromPoints(workout *Workout, params *RoutSegmentCreationParams) ([]byte, error) {
-	points := workout.Data.Details.Points[params.Start-1 : params.End-1]
+	points := workout.Records[params.Start-1 : params.End-1]
 
 	s := gpx.GPXTrackSegment{}
 
@@ -127,14 +127,17 @@ func (rs *RouteSegment) UpdateFromContent() error {
 		return errors.New("route segment parse returned no data")
 	}
 
-	data := parsed[0].Data
+	stats := parsed[0].Stats
+	if stats == nil {
+		stats = &WorkoutStats{}
+	}
 
-	rs.TotalDistance = data.TotalDistance
-	rs.MinElevation = data.MinElevation
-	rs.MaxElevation = data.MaxElevation
-	rs.TotalUp = data.TotalUp
-	rs.TotalDown = data.TotalDown
-	rs.Points = data.Details.Points
+	rs.TotalDistance = parsed[0].TotalDistance
+	rs.MinElevation = stats.MinElevation
+	rs.MaxElevation = stats.MaxElevation
+	rs.TotalUp = stats.TotalUp
+	rs.TotalDown = stats.TotalDown
+	rs.Points = parsed[0].Records
 
 	// Detect whether the route is circular so matching can wrap around the end of the track.
 	if len(rs.Points) > 1 {
@@ -155,7 +158,19 @@ func (rs *RouteSegment) Create(db *gorm.DB) error {
 		return ErrInvalidData
 	}
 
-	return db.Create(rs).Error
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit("RouteSegmentMatches").Create(rs).Error; err != nil {
+			return err
+		}
+
+		if rs.RouteSegmentMatches != nil {
+			if err := replaceRouteSegmentMatches(tx, rs.ID, rs.RouteSegmentMatches); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (rs *RouteSegment) Save(db *gorm.DB) error {
@@ -163,13 +178,47 @@ func (rs *RouteSegment) Save(db *gorm.DB) error {
 		return ErrInvalidData
 	}
 
-	if rs.RouteSegmentMatches != nil {
-		if err := db.Model(rs).Association("RouteSegmentMatches").Replace(rs.RouteSegmentMatches); err != nil {
-			return err
+	return db.Transaction(func(tx *gorm.DB) error {
+		if rs.RouteSegmentMatches != nil {
+			if err := replaceRouteSegmentMatches(tx, rs.ID, rs.RouteSegmentMatches); err != nil {
+				return err
+			}
 		}
+
+		return tx.Omit("RouteSegmentMatches").Save(rs).Error
+	})
+}
+
+func replaceRouteSegmentMatches(tx *gorm.DB, routeSegmentID uint64, matches []*RouteSegmentMatch) error {
+	if err := tx.Where("route_segment_id = ?", routeSegmentID).Delete(&RouteSegmentMatch{}).Error; err != nil {
+		return err
 	}
 
-	return db.Save(rs).Error
+	if len(matches) == 0 {
+		return nil
+	}
+
+	rows := make([]*RouteSegmentMatch, 0, len(matches))
+	for _, m := range matches {
+		if m == nil || m.WorkoutID == 0 {
+			continue
+		}
+
+		rows = append(rows, &RouteSegmentMatch{
+			RouteSegmentID: routeSegmentID,
+			WorkoutID:      m.WorkoutID,
+			FirstID:        m.FirstID,
+			LastID:         m.LastID,
+			Distance:       m.Distance,
+			Duration:       m.Duration,
+		})
+	}
+
+	if len(rows) == 0 {
+		return nil
+	}
+
+	return tx.Omit(clause.Associations).CreateInBatches(&rows, mapDataPointsInsertBatchSize).Error
 }
 
 func (rs *RouteSegment) Address() string {

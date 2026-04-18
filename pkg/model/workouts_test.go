@@ -62,16 +62,18 @@ func TestWorkout_Parse(t *testing.T) {
 
 	assert.NotNil(t, w)
 	assert.Equal(t, WorkoutTypeRunning, w.Type)
-	assert.Equal(t, "Garmin Connect", w.Data.Creator)
+	assert.Equal(t, "Garmin Connect", w.Creator)
 	assert.Equal(t, "some notes", w.Notes)
 	assert.InDelta(t, 39, w.Data.Center.Lat, 1)
 	assert.InDelta(t, -77, w.Data.Center.Lng, 1)
 
-	assert.Len(t, w.Data.Details.Points, 206)
-	assert.InDelta(t, 3125, w.Data.TotalDistance, 1)
-	assert.InDelta(t, 3096, w.Data.TotalDistance2D, 1)
-	assert.InDelta(t, 3.297, w.Data.AverageSpeed, 0.01)
-	assert.InDelta(t, 3.297, w.Data.AverageSpeedNoPause, 0.01)
+	assert.Len(t, w.Records, 206)
+	assert.InDelta(t, 3125, w.TotalDistance, 1)
+	assert.InDelta(t, 3096, w.TotalDistance2D, 1)
+	if assert.NotNil(t, w.Stats) {
+		assert.InDelta(t, 3.297, w.Stats.AverageSpeed, 0.01)
+		assert.InDelta(t, 3.297, w.Stats.AverageSpeedNoPause, 0.01)
+	}
 	assert.Equal(t, "Some name", w.Name)
 	assert.Nil(t, w.Data.Address)
 }
@@ -84,12 +86,13 @@ func TestWorkout_UpdateData(t *testing.T) {
 
 	ud := w.UpdatedAt
 	d := w.Data
-	assert.NotZero(t, d.Details.MapDataID)
-	assert.NotZero(t, w.Data.Details.MapDataID)
+	drs := append([]WorkoutRecord(nil), w.Records...)
+	assert.NotZero(t, d.ID)
+	assert.NotZero(t, w.Data.ID)
 
-	d.CalculateSlopes()
+	w.CalculateSlopes()
 
-	w.setData(dummyMapData())
+	w.setData(&Workout{Data: dummyMapData()})
 	require.NoError(t, w.Save(db))
 
 	assert.NotEqual(t, d, w.Data)
@@ -97,7 +100,12 @@ func TestWorkout_UpdateData(t *testing.T) {
 	ud = w.UpdatedAt
 
 	require.NoError(t, w.UpdateData(db))
-	assert.Equal(t, d.Details.Points, w.Data.Details.Points)
+	assert.Len(t, w.Records, len(drs))
+	if assert.NotEmpty(t, w.Records) {
+		assert.Equal(t, drs[0].Time, w.Records[0].Time)
+		assert.Equal(t, drs[len(drs)-1].Time, w.Records[len(w.Records)-1].Time)
+		assert.InDelta(t, drs[len(drs)-1].TotalDistance, w.Records[len(w.Records)-1].TotalDistance, 0.01)
+	}
 	assert.NotEqual(t, ud, w.UpdatedAt)
 }
 
@@ -112,7 +120,7 @@ func TestWorkout_SaveAndGet(t *testing.T) {
 	newW, err := GetWorkoutDetails(db, w.ID)
 	require.NoError(t, err)
 	assert.Equal(t, w.ID, newW.ID)
-	assert.Equal(t, w.Data.Details.Points, newW.Data.Details.Points)
+	assert.Equal(t, w.Records, newW.Records)
 }
 
 func TestWorkout_Recreate(t *testing.T) {

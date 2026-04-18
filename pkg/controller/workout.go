@@ -666,18 +666,18 @@ func (wc *workoutController) GetWorkoutBreakdown(c echo.Context) error {
 
 	resp := dto.Response[dto.WorkoutBreakdownResponse]{}
 
-	preferLaps := (params.Mode == "" || params.Mode == "auto" || params.Mode == "laps") && workout.Data != nil && len(workout.Data.Laps) > 1
+	preferLaps := (params.Mode == "" || params.Mode == "auto" || params.Mode == "laps") && len(workout.Laps) > 1
 
 	if preferLaps {
 		resp.Results = dto.WorkoutBreakdownResponse{
 			Mode:  "laps",
-			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Data.Laps, workout.Data.Details.Points, requester.PreferredUnits()),
+			Items: dto.NewWorkoutBreakdownItemsFromLaps(workout.Laps, workout.Records, requester.PreferredUnits()),
 		}
 
 		return c.JSON(http.StatusOK, resp)
 	}
 
-	if workout.Data == nil || workout.Data.Details == nil {
+	if workout.Data == nil {
 		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
@@ -725,11 +725,11 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
+	if workout.Data == nil || len(workout.Records) == 0 {
 		return renderApiError(c, http.StatusBadRequest, errors.New("workout has no map data"))
 	}
 
-	points := workout.Data.Details.Points
+	points := workout.Records
 	startIdx := 0
 	endIdx := len(points) - 1
 
@@ -745,7 +745,7 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
 
-	stats, ok := workout.Data.Details.StatsForRange(startIdx, endIdx)
+	stats, ok := model.StatsForRange(workout.Records, startIdx, endIdx)
 	if !ok {
 		return renderApiError(c, http.StatusBadRequest, errors.New("invalid range"))
 	}
@@ -818,13 +818,11 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 			title = string(w.Type)
 		}
 
-		if w.Data != nil {
-			if w.Data.TotalDistance > 0 {
-				title += " - " + formatDistance(w.Data.TotalDistance)
-			}
-			if w.Data.TotalDuration.Seconds() > 0 {
-				title += " " + formatDuration(int64(w.Data.TotalDuration.Seconds()))
-			}
+		if w.TotalDistance > 0 {
+			title += " - " + formatDistance(w.TotalDistance)
+		}
+		if w.TotalDuration.Seconds() > 0 {
+			title += " " + formatDuration(int64(w.TotalDuration.Seconds()))
 		}
 
 		events[i] = dto.CalendarEventResponse{
@@ -1040,7 +1038,7 @@ func (wc *workoutController) createWorkoutManual(c echo.Context, user *model.Use
 
 	workout.User = user
 	workout.UserID = user.ID
-	workout.Data.Creator = "web-interface"
+	workout.Creator = "web-interface"
 
 	equipment, err := wc.context.EquipmentRepo().GetByUserIDs(user.ID, d.EquipmentIDs)
 	if err != nil {
@@ -1384,14 +1382,14 @@ func (wc *workoutController) DownloadWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, errors.New("workout has no file"))
 	}
 
-	basename := workout.GPX.Filename
+	basename := workout.File.Filename
 	if basename == "" {
 		basename = "workout_" + strconv.FormatUint(workout.ID, 10) + ".gpx"
 	}
 
 	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+basename+"\"")
 
-	return c.Blob(http.StatusOK, "application/binary", workout.GPX.Content)
+	return c.Blob(http.StatusOK, "application/binary", workout.File.Content)
 }
 
 // DownloadWorkoutAttachment downloads a workout attachment

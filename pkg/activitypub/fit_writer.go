@@ -29,7 +29,7 @@ func GenerateWorkoutFIT(workout *model.Workout) ([]byte, error) {
 		start = time.Now().UTC()
 	}
 
-	totalDuration := workout.TotalDuration()
+	totalDuration := workout.TotalDuration
 	if totalDuration <= 0 {
 		totalDuration = time.Second
 	}
@@ -47,13 +47,13 @@ func GenerateWorkoutFIT(workout *model.Workout) ([]byte, error) {
 	activity.Records = buildWorkoutRecords(workout, start)
 	activity.Laps = buildWorkoutLaps(workout, start, end)
 
-	timerDuration := max(totalDuration-workout.PauseDuration(), 0)
+	timerDuration := max(totalDuration-workout.PauseDuration, 0)
 	session := mesgdef.NewSession(nil).
 		SetTimestamp(end).
 		SetStartTime(start).
 		SetSport(fitSportForWorkout(workout)).
 		SetSubSport(fitSubSportForWorkout(workout)).
-		SetTotalDistanceScaled(workout.TotalDistance()).
+		SetTotalDistanceScaled(workout.TotalDistance).
 		SetTotalElapsedTimeScaled(totalDuration.Seconds()).
 		SetTotalTimerTimeScaled(timerDuration.Seconds()).
 		SetAvgSpeedScaled(workout.AverageSpeed()).
@@ -65,20 +65,20 @@ func GenerateWorkoutFIT(workout *model.Workout) ([]byte, error) {
 		session.SetMaxSpeedScaled(workout.MaxSpeed())
 	}
 
-	if workout.Data.AverageCadence > 0 {
-		session.SetAvgCadence(clampUint8(math.Round(workout.Data.AverageCadence)))
+	if workout.Stats != nil && workout.Stats.AverageCadence > 0 {
+		session.SetAvgCadence(clampUint8(math.Round(workout.Stats.AverageCadence)))
 	}
 
-	if workout.Data.MaxCadence > 0 {
-		session.SetMaxCadence(clampUint8(math.Round(workout.Data.MaxCadence)))
+	if workout.Stats != nil && workout.Stats.MaxCadence > 0 {
+		session.SetMaxCadence(clampUint8(math.Round(workout.Stats.MaxCadence)))
 	}
 
-	if workout.Data.AveragePower > 0 {
-		session.SetAvgPower(clampUint16(math.Round(workout.Data.AveragePower)))
+	if workout.Stats != nil && workout.Stats.AveragePower > 0 {
+		session.SetAvgPower(clampUint16(math.Round(workout.Stats.AveragePower)))
 	}
 
-	if workout.Data.MaxPower > 0 {
-		session.SetMaxPower(clampUint16(math.Round(workout.Data.MaxPower)))
+	if workout.Stats != nil && workout.Stats.MaxPower > 0 {
+		session.SetMaxPower(clampUint16(math.Round(workout.Stats.MaxPower)))
 	}
 
 	activity.Sessions = append(activity.Sessions, session)
@@ -112,11 +112,11 @@ func WorkoutNoteContent(workout *model.Workout) string {
 	}
 
 	parts := []string{workout.Name}
-	if d := workout.TotalDistance(); d > 0 {
+	if d := workout.TotalDistance; d > 0 {
 		parts = append(parts, fmt.Sprintf("distance: %.2f km", d/1000.0))
 	}
 
-	if dur := workout.TotalDuration(); dur > 0 {
+	if dur := workout.TotalDuration; dur > 0 {
 		parts = append(parts, "duration: "+dur.Round(time.Second).String())
 	}
 
@@ -140,12 +140,12 @@ func WorkoutNoteContent(workout *model.Workout) string {
 }
 
 func buildWorkoutRecords(workout *model.Workout, fallbackStart time.Time) []*mesgdef.Record { //nolint:gocyclo
-	if workout == nil || workout.Data == nil || workout.Data.Details == nil || len(workout.Data.Details.Points) == 0 {
+	if workout == nil || workout.Data == nil || len(workout.Records) == 0 {
 		return nil
 	}
 
-	records := make([]*mesgdef.Record, 0, len(workout.Data.Details.Points))
-	for i, p := range workout.Data.Details.Points {
+	records := make([]*mesgdef.Record, 0, len(workout.Records))
+	for i, p := range workout.Records {
 		ts := p.Time
 		if ts.IsZero() {
 			ts = fallbackStart.Add(p.TotalDuration)
@@ -188,18 +188,18 @@ func buildWorkoutRecords(workout *model.Workout, fallbackStart time.Time) []*mes
 }
 
 func buildWorkoutLaps(workout *model.Workout, start, end time.Time) []*mesgdef.Lap {
-	if workout == nil || workout.Data == nil || len(workout.Data.Laps) == 0 {
+	if workout == nil || workout.Data == nil || len(workout.Laps) == 0 {
 		return []*mesgdef.Lap{mesgdef.NewLap(nil).
 			SetStartTime(start).
 			SetTimestamp(end).
-			SetTotalDistanceScaled(workout.TotalDistance()).
-			SetTotalElapsedTimeScaled(workout.TotalDuration().Seconds()).
-			SetTotalTimerTimeScaled(max(workout.TotalDuration()-workout.PauseDuration(), 0).Seconds()).
+			SetTotalDistanceScaled(workout.TotalDistance).
+			SetTotalElapsedTimeScaled(workout.TotalDuration.Seconds()).
+			SetTotalTimerTimeScaled(max(workout.TotalDuration-workout.PauseDuration, 0).Seconds()).
 			SetAvgSpeedScaled(workout.AverageSpeed())}
 	}
 
-	laps := make([]*mesgdef.Lap, 0, len(workout.Data.Laps))
-	for _, lap := range workout.Data.Laps {
+	laps := make([]*mesgdef.Lap, 0, len(workout.Laps))
+	for _, lap := range workout.Laps {
 		lapStart := lap.Start
 		if lapStart.IsZero() {
 			lapStart = start
@@ -211,31 +211,36 @@ func buildWorkoutLaps(workout *model.Workout, start, end time.Time) []*mesgdef.L
 		}
 
 		moving := max(lap.TotalDuration-lap.PauseDuration, 0)
+		lapStats := lap.Stats
+		if lapStats == nil {
+			lapStats = &model.WorkoutStats{}
+		}
+
 		l := mesgdef.NewLap(nil).
 			SetStartTime(lapStart).
 			SetTimestamp(lapEnd).
 			SetTotalDistanceScaled(lap.TotalDistance).
 			SetTotalElapsedTimeScaled(lap.TotalDuration.Seconds()).
 			SetTotalTimerTimeScaled(moving.Seconds()).
-			SetAvgSpeedScaled(lap.AverageSpeed).
-			SetMaxSpeedScaled(lap.MaxSpeed).
-			SetTotalAscent(clampUint16(math.Round(lap.TotalUp))).
-			SetTotalDescent(clampUint16(math.Round(lap.TotalDown)))
+			SetAvgSpeedScaled(lapStats.AverageSpeed).
+			SetMaxSpeedScaled(lapStats.MaxSpeed).
+			SetTotalAscent(clampUint16(math.Round(lapStats.TotalUp))).
+			SetTotalDescent(clampUint16(math.Round(lapStats.TotalDown)))
 
-		if lap.AverageCadence > 0 {
-			l.SetAvgCadence(clampUint8(math.Round(lap.AverageCadence)))
+		if lapStats.AverageCadence > 0 {
+			l.SetAvgCadence(clampUint8(math.Round(lapStats.AverageCadence)))
 		}
 
-		if lap.MaxCadence > 0 {
-			l.SetMaxCadence(clampUint8(math.Round(lap.MaxCadence)))
+		if lapStats.MaxCadence > 0 {
+			l.SetMaxCadence(clampUint8(math.Round(lapStats.MaxCadence)))
 		}
 
-		if lap.AveragePower > 0 {
-			l.SetAvgPower(clampUint16(math.Round(lap.AveragePower)))
+		if lapStats.AveragePower > 0 {
+			l.SetAvgPower(clampUint16(math.Round(lapStats.AveragePower)))
 		}
 
-		if lap.MaxPower > 0 {
-			l.SetMaxPower(clampUint16(math.Round(lap.MaxPower)))
+		if lapStats.MaxPower > 0 {
+			l.SetMaxPower(clampUint16(math.Round(lapStats.MaxPower)))
 		}
 
 		laps = append(laps, l)
@@ -249,27 +254,20 @@ func fitSportForWorkout(workout *model.Workout) typedef.Sport {
 		return typedef.SportGeneric
 	}
 
-	sport := typedef.SportFromString(string(workout.Type))
+	sport := typedef.SportFromString(workout.Type.String())
 	if sport != typedef.SportInvalid {
 		return sport
-	}
-
-	if workout.Data != nil {
-		sport = typedef.SportFromString(workout.Data.Type)
-		if sport != typedef.SportInvalid {
-			return sport
-		}
 	}
 
 	return typedef.SportGeneric
 }
 
 func fitSubSportForWorkout(workout *model.Workout) typedef.SubSport {
-	if workout == nil || workout.Data == nil {
+	if workout == nil {
 		return typedef.SubSportGeneric
 	}
 
-	s := typedef.SubSportFromString(workout.Data.SubType)
+	s := typedef.SubSportFromString(workout.SubType)
 	if s == typedef.SubSportInvalid {
 		return typedef.SubSportGeneric
 	}

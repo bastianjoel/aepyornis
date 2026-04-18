@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/tkrajina/gpxgo/gpx"
@@ -13,6 +14,12 @@ import (
 var (
 	ErrUnsupportedFile = errors.New("unsupported file")
 	SupportedFileTypes = []string{".fit", ".ftb", ".gpx", ".tcx", ".zip"}
+)
+
+const (
+	// Ignore tiny stop/go noise; only material pauses become synthetic timer events.
+	minSyntheticPauseDuration = 5 * time.Second
+	maxSyntheticPauseSpeed    = 0.3 // m/s
 )
 
 type (
@@ -89,14 +96,35 @@ func parseSingle(f parserFunc, fileType string, filename string, content []byte)
 }
 
 func workoutFromGPX(g *gpx.GPX, filename string, fileType string, content []byte) *model.Workout {
-	data := model.MapDataFromGPX(g)
+	data, records := model.MapDataAndRecordsFromGPX(g)
 	if data == nil {
-		data = &model.MapData{}
+		data = &model.WorkoutGeoMeta{}
 	}
+	totalDistance, totalDistance2D, totalDuration := model.WorkoutTotalsFromRecords(records)
+	statsValues := model.WorkoutStatsFromRecords(records)
+	pauseDuration := model.WorkoutPauseDurationFromAverages(totalDistance, totalDuration, statsValues.AverageSpeedNoPause)
+	gpxType := model.GPXType(g)
+	workoutType, found := model.WorkoutTypeFromData(gpxType)
+	customType := ""
+	if !found {
+		customType = gpxType
+	}
+	stats := &statsValues
 
 	w := &model.Workout{
-		Data: data,
-		Name: data.WorkoutData.Name,
+		Data:            data,
+		Stats:           stats,
+		Records:         append([]model.WorkoutRecord(nil), records...),
+		Events:          synthesizeTimerEventsFromRecords(records),
+		Name:            model.GPXName(g),
+		Creator:         g.Creator,
+		Type:            workoutType,
+		CustomType:      customType,
+		DateEnd:         model.WorkoutEndFromRecords(records),
+		TotalDistance:   totalDistance,
+		TotalDistance2D: totalDistance2D,
+		TotalDuration:   totalDuration,
+		PauseDuration:   pauseDuration,
 	}
 
 	if date := model.GPXDate(g); date != nil {
@@ -148,4 +176,87 @@ func setContentAndName(w *model.Workout, filename string, fileType string, conte
 	}
 
 	w.SetContent(finalName, content)
+}
+
+func synthesizeTimerEventsFromRecords(records []model.WorkoutRecord) []model.WorkoutEvent {
+	if len(records) < 2 {
+		return nil
+	}
+
+	events := make([]model.WorkoutEvent, 0)
+	paused := false
+	pausedAt := time.Time{}
+	pausedFor := time.Duration(0)
+
+	for i := 1; i < len(records); i++ {
+		prev := records[i-1]
+		cur := records[i]
+
+		dt := recordIntervalDuration(prev, cur)
+		pauseInterval := isPauseInterval(cur, dt)
+
+		if pauseInterval {
+			if !paused {
+				paused = true
+				pausedAt = prev.Time
+				pausedFor = 0
+			}
+
+			pausedFor += dt
+			continue
+		}
+
+		if paused {
+			if pausedFor >= minSyntheticPauseDuration {
+				events = appendSyntheticPauseEvents(events, pausedAt, cur.Time)
+			}
+
+			paused = false
+			pausedAt = time.Time{}
+			pausedFor = 0
+		}
+	}
+
+	if paused && pausedFor >= minSyntheticPauseDuration {
+		lastTime := records[len(records)-1].Time
+		events = appendSyntheticPauseEvents(events, pausedAt, lastTime)
+	}
+
+	if len(events) == 0 {
+		return nil
+	}
+
+	return events
+}
+
+func recordIntervalDuration(prev, cur model.WorkoutRecord) time.Duration {
+	if cur.Duration > 0 {
+		return cur.Duration
+	}
+
+	if !prev.Time.IsZero() && !cur.Time.IsZero() {
+		return cur.Time.Sub(prev.Time)
+	}
+
+	return 0
+}
+
+func isPauseInterval(cur model.WorkoutRecord, dt time.Duration) bool {
+	if dt <= 0 {
+		return false
+	}
+
+	speed := cur.Distance / dt.Seconds()
+	return speed <= maxSyntheticPauseSpeed
+}
+
+func appendSyntheticPauseEvents(events []model.WorkoutEvent, stopAt, startAt time.Time) []model.WorkoutEvent {
+	if stopAt.IsZero() || startAt.IsZero() || !startAt.After(stopAt) {
+		return events
+	}
+
+	return append(events,
+		model.WorkoutEvent{Timestamp: stopAt, Event: "timer", EventType: "stop"},
+		model.WorkoutEvent{Timestamp: startAt, Event: "timer", EventType: "start"},
+	)
 }
