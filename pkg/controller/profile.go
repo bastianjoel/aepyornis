@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/worker"
+	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"gorm.io/datatypes"
 )

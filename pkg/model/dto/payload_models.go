@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
+	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/templatehelpers"
 )
 
 const htmlDateFormat = "2006-01-02T15:04"

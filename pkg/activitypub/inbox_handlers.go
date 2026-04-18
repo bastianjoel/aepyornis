@@ -3,8 +3,8 @@ package activitypub
 import (
 	"errors"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"gorm.io/gorm"
 )
 

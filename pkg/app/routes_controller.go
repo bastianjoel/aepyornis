@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/jovandeginste/workout-tracker/v2/pkg/controller"
+	"github.com/AepyornisNet/aepyornis/pkg/controller"
 	"github.com/labstack/echo/v4"
 )
 

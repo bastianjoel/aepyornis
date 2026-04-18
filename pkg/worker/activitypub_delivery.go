@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"time"
 
-	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/vgarvardt/gue/v6"
 )
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )

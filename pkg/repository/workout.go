@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"gorm.io/gorm"
 )
 

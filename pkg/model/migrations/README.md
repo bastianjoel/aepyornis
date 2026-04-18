@@ -16,7 +16,7 @@ This package registers database migrations through `init()` functions.
 package migrations
 
 import (
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"gorm.io/gorm"
 )
 

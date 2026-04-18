@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	gorand "github.com/cat-dealer/go-rand/v2"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )

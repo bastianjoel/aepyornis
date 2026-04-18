@@ -1,4 +1,4 @@
-module github.com/jovandeginste/workout-tracker/v2
+module github.com/AepyornisNet/aepyornis
 
 go 1.25
 

@@ -1,6 +1,6 @@
 package app
 
-import "github.com/jovandeginste/workout-tracker/v2/pkg/container"
+import "github.com/AepyornisNet/aepyornis/pkg/container"
 
 func (a *App) ResetConfiguration() error {
 	if a.Config == nil {

@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 )
 
 // MeasurementResponse represents a daily measurement in API v2 responses

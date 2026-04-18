@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/muktihari/fit/encoder"
 	"github.com/muktihari/fit/profile/filedef"
 	"github.com/muktihari/fit/profile/mesgdef"

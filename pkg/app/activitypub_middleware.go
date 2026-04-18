@@ -3,8 +3,8 @@ package app
 import (
 	"net/http"
 
-	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
+	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
 

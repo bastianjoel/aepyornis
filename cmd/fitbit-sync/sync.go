@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/anyappinc/fitbit"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"resty.dev/v3"
 )
 

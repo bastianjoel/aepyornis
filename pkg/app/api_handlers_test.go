@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"

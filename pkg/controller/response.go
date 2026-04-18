@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
 

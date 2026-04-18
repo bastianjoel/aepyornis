@@ -3,7 +3,7 @@ package version_test
 import (
 	"testing"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
+	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/stretchr/testify/assert"
 )
 

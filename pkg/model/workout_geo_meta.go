@@ -4,8 +4,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/AepyornisNet/aepyornis/pkg/templatehelpers"
 	"github.com/codingsince1985/geo-golang"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 	"gorm.io/gorm"
 )
 

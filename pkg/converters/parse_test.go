@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
 

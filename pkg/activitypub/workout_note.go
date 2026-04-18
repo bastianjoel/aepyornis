@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 )
 
 type WorkoutNote struct {

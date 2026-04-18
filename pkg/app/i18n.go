@@ -3,8 +3,8 @@ package app
 import (
 	"strings"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/invopop/ctxi18n"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 )
 

@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/converters"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/converters"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/vgarvardt/gue/v6"
 )
 

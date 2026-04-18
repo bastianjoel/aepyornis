@@ -5,8 +5,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
 	"github.com/codingsince1985/geo-golang"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
 	"github.com/labstack/gommon/log"
 	"github.com/paulmach/orb"
 	"github.com/tkrajina/gpxgo/gpx"

@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
+	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/google/uuid"
-	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/container"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )

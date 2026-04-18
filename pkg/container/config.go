@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/cat-dealer/go-rand/v2"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
