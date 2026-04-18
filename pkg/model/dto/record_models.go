@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 )
 
 // TotalsResponse represents workout totals in API v2 responses

@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/templatehelpers"
 	"github.com/aquasecurity/table"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 )

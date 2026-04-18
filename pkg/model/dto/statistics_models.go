@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 )
 
 // StatisticsResponse represents the API response for statistics

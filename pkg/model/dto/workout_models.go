@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/templatehelpers"
 	"gorm.io/datatypes"
 )
 

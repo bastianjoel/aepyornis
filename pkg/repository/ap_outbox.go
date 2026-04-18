@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/google/uuid"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"gorm.io/gorm"
 )
 

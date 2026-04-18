@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 )
 
 func ParseFTB(content []byte) ([]*model.Workout, error) {

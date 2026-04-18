@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/invopop/ctxi18n"
-	ap "github.com/jovandeginste/workout-tracker/v2/pkg/activitypub"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 
 	"github.com/labstack/echo/v4"
 )

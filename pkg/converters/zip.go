@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 )
 
 func ParseZip(content []byte) ([]*model.Workout, error) {

@@ -1,10 +1,10 @@
 package main
 
 import (
-	appassets "github.com/jovandeginste/workout-tracker/v2/assets"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/app"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
-	apptranslations "github.com/jovandeginste/workout-tracker/v2/translations"
+	appassets "github.com/AepyornisNet/aepyornis/assets"
+	"github.com/AepyornisNet/aepyornis/pkg/app"
+	"github.com/AepyornisNet/aepyornis/pkg/version"
+	apptranslations "github.com/AepyornisNet/aepyornis/translations"
 	"gorm.io/gorm"
 )
 

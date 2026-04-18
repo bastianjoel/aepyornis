@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/templatehelpers"
 	"github.com/spf13/cobra"
 )
 

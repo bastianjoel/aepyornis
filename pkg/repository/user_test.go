@@ -3,8 +3,8 @@ package repository
 import (
 	"testing"
 
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/fsouza/slognil"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"

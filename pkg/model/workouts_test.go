@@ -3,7 +3,7 @@ package model
 import (
 	"testing"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/geocoder"
+	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
 )
 
 // RouteSegmentResponse represents a route segment in API v2 responses

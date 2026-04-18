@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
+	"github.com/AepyornisNet/aepyornis/pkg/templatehelpers"
 )
 
 type (

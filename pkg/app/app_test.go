@@ -4,11 +4,11 @@ import (
 	"log/slog"
 	"testing"
 
+	appassets "github.com/AepyornisNet/aepyornis/assets"
+	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/version"
+	apptranslations "github.com/AepyornisNet/aepyornis/translations"
 	"github.com/fsouza/slognil"
-	appassets "github.com/jovandeginste/workout-tracker/v2/assets"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/version"
-	apptranslations "github.com/jovandeginste/workout-tracker/v2/translations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

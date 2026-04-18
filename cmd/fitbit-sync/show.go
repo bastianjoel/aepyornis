@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/AepyornisNet/aepyornis/pkg/templatehelpers"
 	"github.com/anyappinc/fitbit"
 	"github.com/aquasecurity/table"
-	"github.com/jovandeginste/workout-tracker/v2/pkg/templatehelpers"
 	"github.com/spf13/cast"
 )
 

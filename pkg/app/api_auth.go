@@ -3,7 +3,7 @@ package app
 import (
 	"strings"
 
-	"github.com/jovandeginste/workout-tracker/v2/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/labstack/echo/v4"
 )
 
