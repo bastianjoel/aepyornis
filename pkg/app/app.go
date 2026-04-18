@@ -184,6 +184,14 @@ func (a *App) createAdminUser() error {
 	a.logger.Warn("Creating admin user '" + u.Username + "', with password 'admin'")
 
 	u.Profile.ResetDefaults()
+	if a.Config.ActivityPubActive {
+		u.ActivityPub = true
+		u.Profile.DefaultWorkoutVisibility = model.WorkoutVisibilityFollowers
+
+		if err := u.GenerateActivityPubKeys(false); err != nil {
+			return err
+		}
+	}
 	u.Profile.User = u
 
 	return u.Create(a.db)
