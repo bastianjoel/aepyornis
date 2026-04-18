@@ -1065,7 +1065,7 @@ msgid "Workout Matches"
 msgstr ""
 
 #: client/src/app/core/components/sidebar/sidebar.html
-msgid "Workout Tracker"
+msgid "Aepyornis"
 msgstr ""
 
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html

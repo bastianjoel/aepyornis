@@ -1237,8 +1237,8 @@ msgid "Workout Matches"
 msgstr "Workout Matches"
 
 #: client/src/app/core/components/sidebar/sidebar.html
-msgid "Workout Tracker"
-msgstr "Workout Tracker"
+msgid "Aepyornis"
+msgstr "Aepyornis"
 
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Workout type"
