@@ -172,7 +172,7 @@ export class RouteSegmentMapComponent extends BaseMapComponent {
       bounds.extend(coord);
     }
 
-    this.map.fitBounds(bounds, { padding: 25, animate: false });
+    this.map.fitBounds(bounds, { padding: 60, animate: false });
   }
 
   private clearTrack(): void {
