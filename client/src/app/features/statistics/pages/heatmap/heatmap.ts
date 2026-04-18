@@ -487,7 +487,7 @@ export class Heatmap extends BaseMapComponent {
     }
 
     if (!bounds.isEmpty()) {
-      this.map.fitBounds(bounds, { padding: 30, animate: false });
+      this.map.fitBounds(bounds, { padding: 60, animate: false });
     }
   }
 

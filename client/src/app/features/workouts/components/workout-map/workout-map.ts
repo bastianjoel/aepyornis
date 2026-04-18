@@ -517,7 +517,7 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
       bounds.extend([point[1], point[0]]);
     }
 
-    this.map.fitBounds(bounds, { padding: 25, animate: false });
+    this.map.fitBounds(bounds, { padding: 60, animate: false });
   }
 
   private getTooltipData(index: number): WorkoutMapPointPopupData | null {
