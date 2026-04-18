@@ -206,6 +206,8 @@ func (ac *adminController) UpdateConfig(c echo.Context) error {
 			VersionSha:           v.Sha,
 			RegistrationDisabled: cfg.RegistrationDisabled,
 			SocialsDisabled:      cfg.SocialsDisabled,
+			AutoImportEnabled:    cfg.AutoImportEnabled,
+			ActivityPubActive:    cfg.ActivityPubActive,
 		},
 	}
 

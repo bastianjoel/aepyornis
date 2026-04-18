@@ -50,6 +50,7 @@ type AppInfoResponse struct {
 	RegistrationDisabled bool   `json:"registration_disabled"`
 	SocialsDisabled      bool   `json:"socials_disabled"`
 	AutoImportEnabled    bool   `json:"auto_import_enabled"`
+	ActivityPubActive    bool   `json:"activity_pub_active"`
 }
 
 type ActivityPubProfileSummaryResponse struct {
