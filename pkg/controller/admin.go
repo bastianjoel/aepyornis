@@ -132,6 +132,10 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
+	if err := user.Profile.Save(ac.context.GetDB()); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
 	resp := dto.Response[dto.UserProfileResponse]{
 		Results: dto.NewUserProfileResponse(user),
 	}
