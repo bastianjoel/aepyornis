@@ -169,8 +169,11 @@ func buildWorkoutRecords(workout *model.Workout, fallbackStart time.Time) []*mes
 		}
 
 		speed := p.AverageSpeed()
+		if metricSpeed, ok := p.ExtraMetrics["speed"]; ok && !math.IsNaN(metricSpeed) && metricSpeed > 0 {
+			speed = metricSpeed
+		}
 		if speed > 0 {
-			rec.SetSpeedScaled(speed)
+			rec.SetEnhancedSpeedScaled(speed)
 		}
 
 		if cadence, ok := p.ExtraMetrics["cadence"]; ok && cadence > 0 {
