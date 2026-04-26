@@ -5,6 +5,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/alexedwards/scs/v2"
 	"github.com/samber/do/v2"
@@ -20,7 +21,7 @@ func newInjector(
 	logger *slog.Logger,
 	gueClient *gue.Client,
 ) do.Injector {
-	injector := do.New(repository.Package)
+	injector := do.New(repository.Package, service.Package)
 	do.ProvideValue(injector, db)
 	do.ProvideValue(injector, cfg)
 	do.ProvideValue(injector, v)

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
@@ -37,6 +37,8 @@ type userController struct {
 	cfg          *config.Config
 	db           *gorm.DB
 	followerRepo repository.Follower
+	apProfileSvc service.ActivityPubProfileService
+	actorService service.ActivityPubActorService
 	userRepo     repository.User
 }
 
@@ -45,6 +47,8 @@ func NewUserController(injector do.Injector) UserController {
 		cfg:          do.MustInvoke[*config.Config](injector),
 		db:           do.MustInvoke[*gorm.DB](injector),
 		followerRepo: do.MustInvoke[repository.Follower](injector),
+		apProfileSvc: do.MustInvoke[service.ActivityPubProfileService](injector),
+		actorService: do.MustInvoke[service.ActivityPubActorService](injector),
 		userRepo:     do.MustInvoke[repository.User](injector),
 	}
 }
@@ -82,16 +86,15 @@ func (uc *userController) GetWhoami(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /totals [get]
 func (uc *userController) GetTotals(c echo.Context) error {
-	targetUser, viewer, viewerActorIRI, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		if errors.Is(err, dto.ErrNotAuthorized) {
-			return renderApiError(c, http.StatusForbidden, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
 		}
-
-		return renderApiError(c, http.StatusNotFound, err)
-	}
-
-	if targetUser == nil || viewer == nil {
+	} else if viewer.IsAnonymous() {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
@@ -112,9 +115,8 @@ func (uc *userController) GetTotals(c echo.Context) error {
 			).
 			Joins("left join workout_stats on workouts.stats_id = workout_stats.id").
 			Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
-		targetUser.ID,
-		viewer.ID,
-		viewerActorIRI,
+		targetUser.Profile.ID,
+		viewer.Profile.ID,
 	)
 
 	totalsShow := targetUser.TotalsShow
@@ -159,9 +161,16 @@ func (uc *userController) GetTotals(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /records [get]
 func (uc *userController) GetRecords(c echo.Context) error {
-	targetUser, viewer, viewerActorIRI, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	startDate, endDate, err := parseDateRange(c)
@@ -169,7 +178,7 @@ func (uc *userController) GetRecords(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	records, err := uc.getVisibleRecords(targetUser, viewer, viewerActorIRI, startDate, endDate)
+	records, err := uc.getVisibleRecords(targetUser, viewer, viewer.Profile.ID, startDate, endDate)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -199,9 +208,16 @@ func (uc *userController) GetRecords(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /records/ranking [get]
 func (uc *userController) GetRecordsRanking(c echo.Context) error {
-	targetUser, viewer, viewerActorIRI, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	workoutType := c.QueryParam("workout_type")
@@ -224,7 +240,7 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	records, totalCount, err := uc.getVisibleDistanceRanking(targetUser, viewer, viewerActorIRI, wt, label, startDate, endDate, pagination.PerPage, pagination.GetOffset())
+	records, totalCount, err := uc.getVisibleDistanceRanking(targetUser, viewer.Profile.ID, wt, label, startDate, endDate, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -257,9 +273,16 @@ func (uc *userController) GetRecordsRanking(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /records/climbs/ranking [get]
 func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
-	targetUser, viewer, viewerActorIRI, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	workoutType := c.QueryParam("workout_type")
@@ -280,7 +303,7 @@ func (uc *userController) GetClimbRecordsRanking(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	records, totalCount, err := uc.getVisibleClimbRanking(targetUser, viewer, viewerActorIRI, wt, startDate, endDate, pagination.PerPage, pagination.GetOffset())
+	records, totalCount, err := uc.getVisibleClimbRanking(targetUser, viewer.Profile.ID, wt, startDate, endDate, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -367,9 +390,16 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 		}
 	}
 
-	targetUser, viewer, viewerActorIRI, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	if viewer.ID != targetUser.ID && !targetUser.ActivityPubEnabled() {
@@ -378,9 +408,8 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 
 	postsQuery := model.ScopeVisibleWorkouts(
 		uc.db.Model(&model.Workout{}),
-		targetUser.ID,
-		viewer.ID,
-		viewerActorIRI,
+		targetUser.Profile.ID,
+		viewer.Profile.ID,
 	)
 
 	var postsCount int64
@@ -388,20 +417,20 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.ID)
+	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	targetActorIRI := uc.localActorIRI(c, targetUser)
-	followingCount, err := uc.followerRepo.CountApprovedFollowingByActorIRI(targetActorIRI)
+	followingCount, err := uc.followerRepo.CountApprovedFollowing(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	isFollowing := false
 	if viewer.ID != targetUser.ID {
-		isFollowing, err = uc.followerRepo.IsFollowingApprovedByActorIRI(viewer.ID, targetActorIRI)
+		isFollowing, err = uc.followerRepo.IsFollowingApproved(viewer.Profile.ID, targetUser.Profile.ID)
 		if err != nil {
 			return renderApiError(c, http.StatusInternalServerError, err)
 		}
@@ -454,9 +483,16 @@ func (uc *userController) FollowUserByHandle(c echo.Context) error {
 		}
 	}
 
-	targetUser, viewer, viewerActorIRI, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	if viewer.ID == targetUser.ID {
@@ -472,23 +508,19 @@ func (uc *userController) FollowUserByHandle(c echo.Context) error {
 	}
 
 	targetActorIRI := uc.localActorIRI(c, targetUser)
-	following, err := uc.followerRepo.UpsertFollowingRequest(viewer.ID, targetActorIRI, targetActorIRI+"/inbox")
+	following, err := uc.followerRepo.UpsertFollowingRequest(viewer.Profile.ID, &targetUser.Profile)
 	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
-	if _, err := uc.followerRepo.UpsertFollowerRequest(targetUser.ID, viewerActorIRI, viewerActorIRI+"/inbox"); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	isFollowing := following.Approved
 
-	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.ID)
+	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	followingCount, err := uc.followerRepo.CountApprovedFollowingByActorIRI(targetActorIRI)
+	followingCount, err := uc.followerRepo.CountApprovedFollowing(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -532,29 +564,32 @@ func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
 		}
 	}
 
-	targetUser, viewer, viewerActorIRI, err := uc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		targetUser, err = uc.userRepo.GetByHandle(handle, uc.localHost(c))
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
+	} else if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusNotFound, dto.ErrNotAuthorized)
 	}
 
 	if viewer.ID == targetUser.ID {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot unfollow yourself"))
 	}
 
-	if err := uc.followerRepo.DeleteFollowerByActorIRI(targetUser.ID, viewerActorIRI); err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
 	targetActorIRI := uc.localActorIRI(c, targetUser)
-	if err := uc.followerRepo.DeleteFollowingByActorIRI(viewer.ID, targetActorIRI); err != nil {
+	if err := uc.followerRepo.DeleteFollowing(viewer.Profile.ID, targetUser.Profile.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
-	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.ID)
+	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	followingCount, err := uc.followerRepo.CountApprovedFollowingByActorIRI(targetActorIRI)
+	followingCount, err := uc.followerRepo.CountApprovedFollowing(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -579,97 +614,13 @@ func (uc *userController) UnfollowUserByHandle(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (uc *userController) resolveTargetUserFromHandle(c echo.Context) (*model.User, *model.User, string, error) {
-	viewer := currentUser(c)
-	if viewer == nil {
-		viewer = model.AnonymousUser()
-	}
-
-	handle := strings.TrimSpace(c.QueryParam("handle"))
-	if handle == "" {
-		if viewer.IsAnonymous() {
-			return nil, nil, "", dto.ErrNotAuthorized
-		}
-
-		return viewer, viewer, uc.localActorIRI(c, viewer), nil
-	}
-
-	normalizedUsername, err := uc.parseLocalHandle(c, handle)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	targetUser, err := uc.userRepo.GetByUsername(normalizedUsername)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	if targetUser == nil {
-		return nil, nil, "", gorm.ErrRecordNotFound
-	}
-
-	return targetUser, viewer, uc.localActorIRI(c, viewer), nil
-}
-
-func (uc *userController) parseLocalHandle(c echo.Context, handle string) (string, error) {
-	h := strings.TrimSpace(handle)
-	h = strings.TrimPrefix(h, "@")
-
-	if parsedURL, err := url.Parse(h); err == nil && parsedURL.Host != "" {
-		segments := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
-		if len(segments) == 3 && segments[0] == "ap" && segments[1] == "users" && segments[2] != "" {
-			if uc.isLocalHost(c, parsedURL.Host) {
-				return segments[2], nil
-			}
-			return "", gorm.ErrRecordNotFound
-		}
-	}
-
-	if strings.Contains(h, "@") {
-		parts := strings.SplitN(h, "@", 2)
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return "", gorm.ErrRecordNotFound
-		}
-
-		if !uc.isLocalHost(c, parts[1]) {
-			return "", gorm.ErrRecordNotFound
-		}
-
-		return parts[0], nil
-	}
-
-	if h == "" {
-		return "", gorm.ErrRecordNotFound
-	}
-
-	return h, nil
-}
-
 func (uc *userController) parseHandleWithHost(c echo.Context, handle string) (string, string, bool, error) {
-	h := strings.TrimSpace(strings.TrimPrefix(handle, "@"))
-	if h == "" {
+	username, host, err := aputil.ParseActorHandle(handle)
+	if err != nil {
 		return "", "", false, gorm.ErrRecordNotFound
 	}
 
-	if parsedURL, err := url.Parse(h); err == nil && parsedURL.Host != "" {
-		segments := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
-		if len(segments) == 3 && segments[0] == "ap" && segments[1] == "users" && segments[2] != "" {
-			isRemote := !uc.isLocalHost(c, parsedURL.Host)
-			return segments[2], parsedURL.Host, isRemote, nil
-		}
-	}
-
-	if strings.Contains(h, "@") {
-		parts := strings.SplitN(h, "@", 2)
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return "", "", false, gorm.ErrRecordNotFound
-		}
-
-		isRemote := !uc.isLocalHost(c, parts[1])
-		return parts[0], parts[1], isRemote, nil
-	}
-
-	return h, "", false, nil
+	return username, host, host != "" && !uc.isLocalHost(c, host), nil
 }
 
 func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host string) error {
@@ -688,6 +639,11 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 		actorURL = actor.ID.String()
 	}
 
+	remoteProfile, err := uc.apProfileSvc.GetByActorIRI(c.Request().Context(), actorURL)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
 	followersCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Followers))
 	followingCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Following))
 	postsCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Outbox))
@@ -703,11 +659,17 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 	}
 
 	iconURL := actorIconURL(actor)
+	if iconURL == "" && remoteProfile.AvatarRemoteURL != nil {
+		iconURL = *remoteProfile.AvatarRemoteURL
+	}
 
 	viewer := currentUser(c)
 	isFollowing := false
 	if viewer != nil && !viewer.IsAnonymous() {
-		isFollowing, _ = uc.followerRepo.IsFollowingActiveByActorIRI(viewer.ID, actorURL)
+		isFollowing, err = uc.followerRepo.IsFollowingActive(viewer.Profile.ID, remoteProfile.ID)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
 	}
 
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
@@ -766,12 +728,16 @@ func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot follow yourself"))
 	}
 
-	if _, err := uc.followerRepo.UpsertFollowingRequest(viewer.ID, actorIRI, inbox); err != nil {
+	remoteProfile, err := uc.apProfileSvc.GetByActorIRI(c.Request().Context(), actorIRI)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	if _, err := uc.followerRepo.UpsertFollowingRequest(viewer.Profile.ID, remoteProfile); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	localActor := currentAPUser(c)
-	if err := localActor.SendFollow(c.Request().Context(), inbox, actorIRI); err != nil {
+	if err := uc.actorService.SendFollow(c.Request().Context(), &viewer.Profile, inbox, actorIRI); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
@@ -842,12 +808,16 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 		return renderApiError(c, http.StatusBadRequest, errors.New("remote actor inbox not found"))
 	}
 
-	localActor := currentAPUser(c)
-	if err := localActor.SendUndoFollow(c.Request().Context(), inbox, actorIRI); err != nil {
+	if err := uc.actorService.SendUndoFollow(c.Request().Context(), &viewer.Profile, inbox, actorIRI); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
-	if err := uc.followerRepo.DeleteFollowingByActorIRI(viewer.ID, actorIRI); err != nil {
+	remoteProfile, err := uc.apProfileSvc.GetByActorIRI(c.Request().Context(), actorIRI)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	if err := uc.followerRepo.DeleteFollowing(viewer.Profile.ID, remoteProfile.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -889,12 +859,7 @@ func (uc *userController) unfollowRemoteUserByHandle(c echo.Context, handle stri
 }
 
 func (uc *userController) isLocalHost(c echo.Context, host string) bool {
-	configuredHost := uc.cfg.Host
-	if configuredHost == "" {
-		configuredHost = c.Request().Host
-	}
-
-	return strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(configuredHost))
+	return strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(uc.localHost(c)))
 }
 
 func itemIRIString(it vocab.Item) string {
@@ -953,15 +918,18 @@ func (uc *userController) localActorIRI(c echo.Context, user *model.User) string
 }
 
 func (uc *userController) renderHandle(c echo.Context, username string) string {
-	host := uc.cfg.Host
-	if host == "" {
-		host = c.Request().Host
-	}
-
-	return fmt.Sprintf("@%s@%s", username, host)
+	return fmt.Sprintf("@%s@%s", username, uc.localHost(c))
 }
 
-func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, viewerActorIRI string, startDate, endDate *time.Time) ([]*model.WorkoutPersonalRecord, error) {
+func (uc *userController) localHost(c echo.Context) string {
+	if uc.cfg.Host != "" {
+		return uc.cfg.Host
+	}
+
+	return c.Request().Host
+}
+
+func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, viewerProfileID uint64, startDate, endDate *time.Time) ([]*model.WorkoutPersonalRecord, error) {
 	if targetUser.IsAnonymous() {
 		return nil, model.ErrAnonymousUser
 	}
@@ -973,7 +941,7 @@ func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, view
 	rs := []*model.WorkoutPersonalRecord{}
 
 	for _, w := range model.DistanceWorkoutTypes() {
-		r, err := uc.getVisibleRecordForType(targetUser, viewer, viewerActorIRI, w, startDate, endDate)
+		r, err := uc.getVisibleRecordForType(targetUser, viewerProfileID, w, startDate, endDate)
 		if err != nil {
 			return nil, err
 		}
@@ -986,7 +954,7 @@ func (uc *userController) getVisibleRecords(targetUser, viewer *model.User, view
 	return rs, nil
 }
 
-func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User, viewerActorIRI string, t model.WorkoutType, startDate, endDate *time.Time) (*model.WorkoutPersonalRecord, error) {
+func (uc *userController) getVisibleRecordForType(targetUser *model.User, viewerProfileID uint64, t model.WorkoutType, startDate, endDate *time.Time) (*model.WorkoutPersonalRecord, error) {
 	if t == "" {
 		t = model.WorkoutTypeRunning
 		if targetUser != nil {
@@ -1007,9 +975,8 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 	for k, v := range mapping {
 		query := model.ScopeVisibleWorkouts(
 			uc.db.Table("workouts").Joins("left join workout_stats on workouts.stats_id = workout_stats.id").Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
-			targetUser.ID,
-			viewer.ID,
-			viewerActorIRI,
+			targetUser.Profile.ID,
+			viewerProfileID,
 		).
 			Where("workouts.type = ?", t).
 			Select("workouts.id as id", v+" as value", "workouts.date as date").
@@ -1032,9 +999,8 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 
 	durationQuery := model.ScopeVisibleWorkouts(
 		uc.db.Table("workouts").Joins("left join workout_geo_meta on workouts.id = workout_geo_meta.workout_id"),
-		targetUser.ID,
-		viewer.ID,
-		viewerActorIRI,
+		targetUser.Profile.ID,
+		viewerProfileID,
 	).Where("workouts.type = ?", t).
 		Select("workouts.id as id", "max(total_duration) as value", "workouts.date as date").
 		Order("max(total_duration) DESC").
@@ -1062,8 +1028,8 @@ func (uc *userController) getVisibleRecordForType(targetUser, viewer *model.User
 }
 
 func (uc *userController) getVisibleDistanceRanking(
-	targetUser, viewer *model.User,
-	viewerActorIRI string,
+	targetUser *model.User,
+	viewerProfileID uint64,
 	t model.WorkoutType,
 	label string,
 	startDate, endDate *time.Time,
@@ -1078,9 +1044,8 @@ func (uc *userController) getVisibleDistanceRanking(
 		uc.db.Table("workout_interval_records").
 			Select("workout_interval_records.*, workouts.date as date").
 			Joins("join workouts on workouts.id = workout_interval_records.workout_id"),
-		targetUser.ID,
-		viewer.ID,
-		viewerActorIRI,
+		targetUser.Profile.ID,
+		viewerProfileID,
 	).Where("workouts.type = ?", t).
 		Where("workout_interval_records.type = ?", model.WorkoutIntervalBestTypeSpeed).
 		Where("workout_interval_records.label = ?", label)
@@ -1131,7 +1096,7 @@ func (uc *userController) getVisibleDistanceRanking(
 	return result, totalCount, nil
 }
 
-func (uc *userController) getVisibleClimbRanking(targetUser, viewer *model.User, viewerActorIRI string, t model.WorkoutType, startDate, endDate *time.Time, limit, offset int) ([]model.ClimbRecord, int64, error) {
+func (uc *userController) getVisibleClimbRanking(targetUser *model.User, viewerProfileID uint64, t model.WorkoutType, startDate, endDate *time.Time, limit, offset int) ([]model.ClimbRecord, int64, error) {
 	if !t.IsDistance() {
 		return nil, 0, fmt.Errorf("climb ranking is only supported for distance workout types: %s", t)
 	}
@@ -1139,9 +1104,8 @@ func (uc *userController) getVisibleClimbRanking(targetUser, viewer *model.User,
 	var workouts []*model.Workout
 	q := model.ScopeVisibleWorkouts(
 		model.PreloadWorkoutData(uc.db),
-		targetUser.ID,
-		viewer.ID,
-		viewerActorIRI,
+		targetUser.Profile.ID,
+		viewerProfileID,
 	).Where("workouts.type = ?", t)
 
 	if startDate != nil {

@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do/v2"
@@ -48,11 +48,13 @@ type WorkoutController interface {
 type workoutController struct {
 	apOutboxRepo         repository.APOutbox
 	apStatusDeliveryRepo repository.APStatusDelivery
+	apProfileService     service.ActivityPubProfileService
 	cfg                  *config.Config
 	client               *gue.Client
 	db                   *gorm.DB
 	equipmentRepo        repository.Equipment
 	logger               *slog.Logger
+	actorService         service.ActivityPubActorService
 	userRepo             repository.User
 	workoutLikeRepo      repository.WorkoutLike
 	workoutReplyRepo     repository.WorkoutReply
@@ -65,11 +67,13 @@ func NewWorkoutController(injector do.Injector) WorkoutController {
 	return &workoutController{
 		apOutboxRepo:         do.MustInvoke[repository.APOutbox](injector),
 		apStatusDeliveryRepo: do.MustInvoke[repository.APStatusDelivery](injector),
+		apProfileService:     do.MustInvoke[service.ActivityPubProfileService](injector),
 		cfg:                  do.MustInvoke[*config.Config](injector),
 		client:               do.MustInvoke[*gue.Client](injector),
 		db:                   do.MustInvoke[*gorm.DB](injector),
 		equipmentRepo:        do.MustInvoke[repository.Equipment](injector),
 		logger:               do.MustInvoke[*slog.Logger](injector),
+		actorService:         do.MustInvoke[service.ActivityPubActorService](injector),
 		userRepo:             do.MustInvoke[repository.User](injector),
 		workoutLikeRepo:      do.MustInvoke[repository.WorkoutLike](injector),
 		workoutReplyRepo:     do.MustInvoke[repository.WorkoutReply](injector),
@@ -136,7 +140,7 @@ func workoutOwnerUserID(workout *model.Workout) uint64 {
 	return *workout.Profile.UserID
 }
 
-func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.User, workout *model.Workout) (bool, error) {
+func (wc *workoutController) canReadWorkout(requester *model.User, workout *model.Workout) (bool, error) {
 	if requester == nil || workout == nil {
 		return false, nil
 	}
@@ -150,21 +154,14 @@ func (wc *workoutController) canReadWorkout(c echo.Context, requester *model.Use
 	case model.WorkoutVisibilityPublic:
 		return true, nil
 	case model.WorkoutVisibilityFollowers:
-		requesterActorIRI := aputil.LocalActorURL(aputil.LocalActorURLConfig{
-			Host:           wc.cfg.Host,
-			WebRoot:        wc.cfg.WebRoot,
-			FallbackHost:   c.Request().Host,
-			FallbackScheme: c.Scheme(),
-		}, requester.Profile.Username)
-
-		if requesterActorIRI == "" {
+		if requester.Profile.ID == 0 {
 			return false, nil
 		}
 
 		var count int64
 		if err := wc.db.
 			Model(&model.Follower{}).
-			Where("user_id = ? AND actor_iri = ? AND approved = ?", ownerUserID, requesterActorIRI, true).
+			Where("profile_id = ? AND following_profile_id = ? AND approved = ?", requester.Profile.ID, workout.ProfileID, true).
 			Count(&count).Error; err != nil {
 			return false, err
 		}
@@ -186,7 +183,7 @@ func (wc *workoutController) getReadableWorkout(c echo.Context, withDetails bool
 		return nil, err
 	}
 
-	allowed, err := wc.canReadWorkout(c, currentUser(c), workout)
+	allowed, err := wc.canReadWorkout(currentUser(c), workout)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +240,7 @@ func (wc *workoutController) GetWorkouts(c echo.Context) error {
 
 	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
-		liked, likedErr := wc.workoutLikeRepo.LikedMapByUser(workoutIDs(workouts), user.ID)
+		liked, likedErr := wc.workoutLikeRepo.LikedMapByProfile(workoutIDs(workouts), user.Profile.ID)
 		if likedErr == nil {
 			applyLikeMetadata(results, counts, liked)
 		}
@@ -300,7 +297,7 @@ func (wc *workoutController) GetWorkout(c echo.Context) error {
 		result.LikesCount = counts[workout.ID]
 	}
 
-	liked, err := wc.workoutLikeRepo.LikedMapByUser([]uint64{workout.ID}, currentUser(c).ID)
+	liked, err := wc.workoutLikeRepo.LikedMapByProfile([]uint64{workout.ID}, currentUser(c).Profile.ID)
 	if err == nil {
 		result.LikedByMe = liked[workout.ID]
 	}
@@ -343,19 +340,17 @@ func (wc *workoutController) GetWorkoutLikes(c echo.Context) error {
 	results := make([]dto.WorkoutLikeResponse, 0, len(likes))
 	for i := range likes {
 		likeResponse := dto.NewWorkoutLikeResponse(&likes[i])
-
-		if likes[i].ActorIRI != nil && *likes[i].ActorIRI != "" {
-			cachedName, cachedAvatarURL, ok := aputil.GetCachedActorProfile(*likes[i].ActorIRI)
-			if !ok {
-				cachedName, cachedAvatarURL, ok = aputil.ResolveAndCacheActorProfile(c.Request().Context(), *likes[i].ActorIRI)
-			}
-
-			if ok {
-				if cachedName != "" {
-					likeResponse.ActorName = &cachedName
-				}
-				if cachedAvatarURL != "" {
-					likeResponse.AvatarURL = &cachedAvatarURL
+		if likes[i].Profile != nil && likes[i].Profile.UserID == nil {
+			if actorIRI := strings.TrimSpace(likes[i].Profile.ActorURL()); actorIRI != "" {
+				profile, err := wc.apProfileService.GetByActorIRI(c.Request().Context(), actorIRI)
+				if err == nil && profile != nil {
+					if name := strings.TrimSpace(profile.DisplayName); name != "" {
+						likeResponse.ActorName = &name
+					}
+					if profile.AvatarRemoteURL != nil && strings.TrimSpace(*profile.AvatarRemoteURL) != "" {
+						avatarURL := strings.TrimSpace(*profile.AvatarRemoteURL)
+						likeResponse.AvatarURL = &avatarURL
+					}
 				}
 			}
 		}
@@ -417,17 +412,19 @@ func (wc *workoutController) GetWorkoutReplies(c echo.Context) error {
 	results := make([]dto.WorkoutReplyResponse, 0, len(replies))
 	for i := range replies {
 		replyResponse := dto.NewWorkoutReplyResponse(&replies[i])
-		if replies[i].ActorIRI != nil && *replies[i].ActorIRI != "" {
-			cachedName, cachedAvatarURL, ok := aputil.GetCachedActorProfile(*replies[i].ActorIRI)
-			if !ok {
-				cachedName, cachedAvatarURL, ok = aputil.ResolveAndCacheActorProfile(c.Request().Context(), *replies[i].ActorIRI)
-			}
-			if ok {
-				if replyResponse.ActorName == nil && cachedName != "" {
-					replyResponse.ActorName = &cachedName
-				}
-				if cachedAvatarURL != "" {
-					replyResponse.AvatarURL = &cachedAvatarURL
+		if replies[i].Profile != nil && replies[i].Profile.UserID == nil {
+			if actorIRI := strings.TrimSpace(replies[i].Profile.ActorURL()); actorIRI != "" {
+				profile, err := wc.apProfileService.GetByActorIRI(c.Request().Context(), actorIRI)
+				if err == nil && profile != nil {
+					if replyResponse.ActorName == nil {
+						if name := strings.TrimSpace(profile.DisplayName); name != "" {
+							replyResponse.ActorName = &name
+						}
+					}
+					if profile.AvatarRemoteURL != nil && strings.TrimSpace(*profile.AvatarRemoteURL) != "" {
+						avatarURL := strings.TrimSpace(*profile.AvatarRemoteURL)
+						replyResponse.AvatarURL = &avatarURL
+					}
 				}
 			}
 		}
@@ -473,7 +470,7 @@ func (wc *workoutController) LikeWorkout(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
 	}
 
-	if err := wc.workoutLikeRepo.LikeByUser(workout.ID, viewer.ID); err != nil {
+	if err := wc.workoutLikeRepo.LikeByProfile(workout.ID, viewer.Profile.ID); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -555,8 +552,7 @@ func (wc *workoutController) LikeWorkoutByObject(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("cannot like your own workout"))
 	}
 
-	localActor := currentAPUser(c)
-	if err := localActor.SendLike(c.Request().Context(), inbox, params.ObjectID); err != nil {
+	if err := wc.actorService.SendLike(c.Request().Context(), &viewer.Profile, inbox, params.ObjectID); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
@@ -576,7 +572,7 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 		return nil, http.StatusNotFound, err
 	}
 
-	allowed, err := wc.canReadWorkout(c, viewer, workout)
+	allowed, err := wc.canReadWorkout(viewer, workout)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -589,7 +585,7 @@ func (wc *workoutController) likeLocalWorkout(c echo.Context, viewer *model.User
 		return nil, http.StatusBadRequest, errors.New("cannot like your own workout")
 	}
 
-	if err := wc.workoutLikeRepo.LikeByUser(localWorkoutID, viewer.ID); err != nil {
+	if err := wc.workoutLikeRepo.LikeByProfile(localWorkoutID, viewer.Profile.ID); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -641,13 +637,13 @@ func (wc *workoutController) CreateReply(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, errors.New("content is required"))
 	}
 
-	reply, err := wc.workoutReplyRepo.CreateLocalReply(workout.ID, viewer.ID, params.Content)
+	reply, err := wc.workoutReplyRepo.CreateLocalReply(workout.ID, viewer.Profile.ID, params.Content)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	// Reload reply with user data
-	if err := wc.db.Preload("User").Preload("User.Profile").First(reply, reply.ID).Error; err != nil {
+	// Reload reply with profile data
+	if err := wc.db.Preload("Profile").Preload("Profile.User").First(reply, reply.ID).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -807,9 +803,18 @@ func (wc *workoutController) GetWorkoutRangeStats(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /workouts/calendar [get]
 func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
-	targetUser, viewer, viewerActorIRI, err := wc.resolveTargetUserFromHandle(c)
-	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+	viewer := currentUser(c)
+	targetUser := viewer
+	if handle := strings.TrimSpace(c.QueryParam("handle")); handle != "" {
+		var err error
+		host := wc.cfg.Host
+		if host == "" {
+			host = c.Request().Host
+		}
+		targetUser, err = wc.userRepo.GetByHandle(handle, host)
+		if err != nil {
+			return renderApiError(c, http.StatusNotFound, err)
+		}
 	}
 
 	var params dto.CalendarQueryParams
@@ -827,9 +832,8 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 
 	db := model.ScopeVisibleWorkouts(
 		model.PreloadWorkoutData(wc.db),
-		targetUser.ID,
-		viewer.ID,
-		viewerActorIRI,
+		targetUser.Profile.ID,
+		viewer.Profile.ID,
 	)
 
 	const calTS = "2006-01-02T15:04:05"
@@ -876,73 +880,6 @@ func (wc *workoutController) GetWorkoutCalendar(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
-}
-
-func (wc *workoutController) resolveTargetUserFromHandle(c echo.Context) (*model.User, *model.User, string, error) {
-	viewer := currentUser(c)
-	handle := strings.TrimSpace(c.QueryParam("handle"))
-	if handle == "" {
-		return viewer, viewer, wc.localActorIRI(c, viewer), nil
-	}
-
-	normalizedUsername, err := wc.parseLocalHandle(c, handle)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	targetUser, err := wc.userRepo.GetByUsername(normalizedUsername)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	if viewer.ID != targetUser.ID && !targetUser.ActivityPubEnabled() {
-		return nil, nil, "", gorm.ErrRecordNotFound
-	}
-
-	return targetUser, viewer, wc.localActorIRI(c, viewer), nil
-}
-
-func (wc *workoutController) parseLocalHandle(c echo.Context, handle string) (string, error) {
-	h := strings.TrimSpace(handle)
-	h = strings.TrimPrefix(h, "@")
-
-	if parsedURL, err := url.Parse(h); err == nil && parsedURL.Host != "" {
-		segments := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
-		if len(segments) == 3 && segments[0] == "ap" && segments[1] == "users" && segments[2] != "" {
-			if wc.isLocalHost(c, parsedURL.Host) {
-				return segments[2], nil
-			}
-			return "", gorm.ErrRecordNotFound
-		}
-	}
-
-	if strings.Contains(h, "@") {
-		parts := strings.SplitN(h, "@", 2)
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return "", gorm.ErrRecordNotFound
-		}
-
-		if !wc.isLocalHost(c, parts[1]) {
-			return "", gorm.ErrRecordNotFound
-		}
-
-		return parts[0], nil
-	}
-
-	if h == "" {
-		return "", gorm.ErrRecordNotFound
-	}
-
-	return h, nil
-}
-
-func (wc *workoutController) isLocalHost(c echo.Context, host string) bool {
-	configuredHost := wc.cfg.Host
-	if configuredHost == "" {
-		configuredHost = c.Request().Host
-	}
-
-	return strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(configuredHost))
 }
 
 func (wc *workoutController) localActorIRI(c echo.Context, user *model.User) string {
@@ -1148,13 +1085,6 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 		scope = "global"
 	}
 
-	requesterActorIRI := aputil.LocalActorURL(aputil.LocalActorURLConfig{
-		Host:           wc.cfg.Host,
-		WebRoot:        wc.cfg.WebRoot,
-		FallbackHost:   c.Request().Host,
-		FallbackScheme: c.Scheme(),
-	}, requester.Profile.Username)
-
 	var workouts []*model.Workout
 	query := wc.db.
 		Scopes(model.PreloadWorkoutData).
@@ -1168,18 +1098,15 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 				EXISTS (
 					SELECT 1
 					FROM followers f
-					WHERE f.user_id = ?
-						AND f.actor_iri = ?
-						AND f.direction = ?
+					WHERE f.profile_id = ?
+						AND f.following_profile_id = workouts.profile_id
 						AND f.approved = ?
 				)
 			)`,
 			requester.Profile.ID,
 			model.WorkoutVisibilityPublic,
 			model.WorkoutVisibilityFollowers,
-			requester.ID,
-			requesterActorIRI,
-			model.FollowerDirectionOutgoing,
+			requester.Profile.ID,
 			true,
 		)
 	} else {
@@ -1189,18 +1116,15 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 				EXISTS (
 					SELECT 1
 					FROM followers f
-					WHERE f.user_id = ?
-						AND f.actor_iri = ?
-						AND f.direction = ?
+					WHERE f.profile_id = ?
+						AND f.following_profile_id = workouts.profile_id
 						AND f.approved = ?
 				)
 			)`,
 			requester.Profile.ID,
 			model.WorkoutVisibilityPublic,
 			model.WorkoutVisibilityFollowers,
-			requester.ID,
-			requesterActorIRI,
-			model.FollowerDirectionOutgoing,
+			requester.Profile.ID,
 			true,
 		)
 	}
@@ -1218,7 +1142,7 @@ func (wc *workoutController) GetRecentWorkouts(c echo.Context) error {
 
 	counts, err := wc.workoutLikeRepo.CountMapByWorkoutIDs(workoutIDs(workouts))
 	if err == nil {
-		liked, likedErr := wc.workoutLikeRepo.LikedMapByUser(workoutIDs(workouts), requester.ID)
+		liked, likedErr := wc.workoutLikeRepo.LikedMapByProfile(workoutIDs(workouts), requester.Profile.ID)
 		if likedErr == nil {
 			applyLikeMetadata(results, counts, liked)
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/labstack/echo/v4"
@@ -25,6 +26,7 @@ type ApUserController interface {
 
 type apUserController struct {
 	cfg          *config.Config
+	actorService service.ActivityPubActorService
 	followerRepo repository.Follower
 	userRepo     repository.User
 }
@@ -34,6 +36,7 @@ const followersPageSize = 20
 func NewApUserController(injector do.Injector) ApUserController {
 	return &apUserController{
 		cfg:          do.MustInvoke[*config.Config](injector),
+		actorService: do.MustInvoke[service.ActivityPubActorService](injector),
 		followerRepo: do.MustInvoke[repository.Follower](injector),
 		userRepo:     do.MustInvoke[repository.User](injector),
 	}
@@ -58,8 +61,10 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, errors.New("resource not found"))
 	}
 
-	actorPath := strings.TrimSuffix(c.Request().URL.Path, "/")
-	actorURL := fmt.Sprintf("%s://%s%s", c.Scheme(), c.Request().Host, actorPath)
+	actorURL, err := ac.actorService.ActorURL(&user.Profile)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, fmt.Errorf("failed to resolve actor URL: %w", err))
+	}
 
 	person := vocab.Person{
 		Type:              vocab.PersonType,
@@ -130,17 +135,18 @@ func (ac *apUserController) Following(c echo.Context) error {
 		}
 	}
 
-	following, err := ac.followerRepo.ListApprovedFollowing(targetUser.ID)
+	following, err := ac.followerRepo.ListApprovedFollowing(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	items := make(vocab.ItemCollection, 0, len(following))
 	for _, entry := range following {
-		if entry.ActorIRI == "" {
+		actorURL, actorErr := ac.actorService.ActorURL(entry.FollowingProfile)
+		if actorErr != nil || actorURL == "" {
 			continue
 		}
-		items = append(items, vocab.IRI(entry.ActorIRI))
+		items = append(items, vocab.IRI(actorURL))
 	}
 
 	followingURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
@@ -222,17 +228,18 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		}
 	}
 
-	followers, err := ac.followerRepo.ListApprovedFollowers(targetUser.ID)
+	followers, err := ac.followerRepo.ListApprovedFollowers(targetUser.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	items := make(vocab.ItemCollection, 0, len(followers))
 	for _, follower := range followers {
-		if follower.ActorIRI == "" {
+		actorURL, actorErr := ac.actorService.ActorURL(follower.Profile)
+		if actorErr != nil || actorURL == "" {
 			continue
 		}
-		items = append(items, vocab.IRI(follower.ActorIRI))
+		items = append(items, vocab.IRI(actorURL))
 	}
 
 	followersURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{

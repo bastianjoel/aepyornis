@@ -11,6 +11,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/labstack/echo/v4"
@@ -40,6 +41,7 @@ type profileController struct {
 	followerRepo repository.Follower
 	logger       *slog.Logger
 	client       *gue.Client
+	actorService service.ActivityPubActorService
 	version      *version.Version
 }
 
@@ -50,6 +52,7 @@ func NewProfileController(injector do.Injector) ProfileController {
 		followerRepo: do.MustInvoke[repository.Follower](injector),
 		logger:       do.MustInvoke[*slog.Logger](injector),
 		client:       do.MustInvoke[*gue.Client](injector),
+		actorService: do.MustInvoke[service.ActivityPubActorService](injector),
 		version:      do.MustInvoke[*version.Version](injector),
 	}
 }
@@ -280,14 +283,15 @@ func (pc *profileController) EnableActivityPub(c echo.Context) error {
 func (pc *profileController) ListFollowRequests(c echo.Context) error {
 	user := currentUser(c)
 
-	requests, err := pc.followerRepo.ListFollowerRequests(user.ID)
+	requests, err := pc.followerRepo.ListFollowerRequests(user.Profile.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	results := make([]dto.FollowRequestResponse, 0, len(requests))
 	for _, req := range requests {
-		results = append(results, dto.NewFollowRequestResponse(req))
+		actorURL, _ := pc.actorService.ActorURL(req.Profile)
+		results = append(results, dto.NewFollowRequestResponse(req, actorURL))
 	}
 
 	return c.JSON(http.StatusOK, dto.Response[[]dto.FollowRequestResponse]{
@@ -317,17 +321,17 @@ func (pc *profileController) AcceptFollowRequest(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	follower, err := pc.followerRepo.ApproveFollowerRequest(user.ID, id)
+	follower, err := pc.followerRepo.ApproveFollowerRequest(user.Profile.ID, id)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := currentAPUser(c).SendFollowAccept(c.Request().Context(), *follower); err != nil {
+	if err := pc.actorService.SendFollowAccept(c.Request().Context(), &user.Profile, *follower); err != nil {
 		return renderApiError(c, http.StatusBadGateway, err)
 	}
 
 	return c.JSON(http.StatusOK, dto.Response[dto.FollowRequestResponse]{
-		Results: dto.NewFollowRequestResponse(*follower),
+		Results: dto.NewFollowRequestResponse(*follower, follower.Profile.ActorURL()),
 	})
 }
 

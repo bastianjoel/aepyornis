@@ -9,6 +9,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/service"
 	"github.com/fsouza/slognil"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/labstack/echo/v4"
@@ -21,7 +22,7 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	db, err := model.Connect("memory", "", false, slognil.NewLogger())
 	require.NoError(t, err)
 
-	injector := do.New(repository.Package)
+	injector := do.New(repository.Package, service.Package)
 	do.ProvideValue(injector, db)
 	do.ProvideValue(injector, slognil.NewLogger())
 	ctrl := NewApInboxController(injector)
@@ -41,7 +42,14 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	require.NoError(t, localUser.Create(db))
 
 	remoteActorIRI := "https://wt-ap2.test/ap/users/admin"
-	_, err = do.MustInvoke[repository.Follower](injector).UpsertFollowingRequest(localUser.ID, remoteActorIRI, remoteActorIRI+"/inbox")
+	remoteProfile := &model.Profile{
+		Username:    "admin",
+		DisplayName: "Admin",
+		Domain:      func() *string { d := "wt-ap2.test"; return &d }(),
+		URL:         func() *string { u := remoteActorIRI; return &u }(),
+		InboxURL:    func() *string { u := remoteActorIRI + "/inbox"; return &u }(),
+	}
+	_, err = do.MustInvoke[repository.Follower](injector).UpsertFollowingRequest(localUser.Profile.ID, remoteProfile)
 	require.NoError(t, err)
 
 	payload := []byte(`{
@@ -71,7 +79,9 @@ func TestApInbox_AcceptFollowActivity(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusAccepted, rec.Code)
 
-	approved, err := do.MustInvoke[repository.Follower](injector).IsFollowingApprovedByActorIRI(localUser.ID, remoteActorIRI)
+	savedRemoteProfile, err := remoteProfile.UpsertRemote(db)
+	require.NoError(t, err)
+	approved, err := do.MustInvoke[repository.Follower](injector).IsFollowingApproved(localUser.Profile.ID, savedRemoteProfile.ID)
 	require.NoError(t, err)
 	assert.True(t, approved)
 }
@@ -80,7 +90,7 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 	db, err := model.Connect("memory", "", false, slognil.NewLogger())
 	require.NoError(t, err)
 
-	injector := do.New(repository.Package)
+	injector := do.New(repository.Package, service.Package)
 	do.ProvideValue(injector, db)
 	do.ProvideValue(injector, slognil.NewLogger())
 	ctrl := NewApInboxController(injector)
@@ -129,11 +139,11 @@ func TestApInbox_CreateRemoteWorkoutActivity(t *testing.T) {
 	assert.Equal(t, http.StatusAccepted, rec.Code)
 
 	status := &model.APStatus{}
-	err = db.Where("object_id = ?", "https://wt-ap2.test/ap/users/admin/outbox/abc#object").First(status).Error
+	err = db.Preload("Profile").Where("object_id = ?", "https://wt-ap2.test/ap/users/admin/outbox/abc#object").First(status).Error
 	require.NoError(t, err)
 	assert.Equal(t, model.APStatusTypeWorkout, status.StatusType)
 	assert.Equal(t, "remote", status.Origin)
-	if assert.NotNil(t, status.ActorIRI) {
-		assert.Equal(t, remoteActorIRI, *status.ActorIRI)
+	if assert.NotNil(t, status.Profile) {
+		assert.Equal(t, remoteActorIRI, status.Profile.ActorURL())
 	}
 }
