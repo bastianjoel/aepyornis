@@ -286,6 +286,7 @@ type AdminUserUpdateData struct {
 }
 
 type ProfileUpdateData struct {
+	Name                     string                   `json:"name"`
 	Birthdate                *string                  `json:"birthdate"`
 	PreferredUnits           model.UserPreferredUnits `json:"preferred_units"`
 	Language                 string                   `json:"language"`

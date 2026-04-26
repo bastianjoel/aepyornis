@@ -74,6 +74,7 @@ export type UserUpdateRequest = {
 };
 
 export type ProfileUpdateRequest = {
+  name: string;
   birthdate?: string;
   preferred_units: UserPreferredUnits;
   language: string;

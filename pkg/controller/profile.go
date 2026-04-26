@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AepyornisNet/aepyornis/pkg/config"
@@ -115,6 +116,11 @@ func (pc *profileController) UpdateProfile(c echo.Context) error {
 		user.Profile.Birthdate = nil
 	}
 
+	displayName := strings.TrimSpace(updateData.Name)
+	if displayName == "" {
+		return renderApiError(c, http.StatusBadRequest, errors.New("display name is required"))
+	}
+	user.Profile.DisplayName = displayName
 	user.PreferredUnits = updateData.PreferredUnits
 	user.Language = updateData.Language
 	user.Theme = updateData.Theme

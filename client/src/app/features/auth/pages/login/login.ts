@@ -65,6 +65,7 @@ export class Login implements OnInit {
     // Initialize register form with custom validator for password matching
     this.registerForm = this.fb.group(
       {
+        username: ['', Validators.required],
         email: ['', [Validators.required, Validators.email]],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', Validators.required],
@@ -153,8 +154,9 @@ export class Login implements OnInit {
     this.api
       .register({
         email: String(formValue.email ?? ''),
+        username: String(formValue.username ?? ''),
         password: String(formValue.password ?? ''),
-        name: String(formValue.email ?? ''),
+        name: String(formValue.username ?? ''),
         language: currentLanguage,
       })
       .subscribe({

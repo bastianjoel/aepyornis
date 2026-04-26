@@ -123,12 +123,16 @@ func (ac *authController) Register(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if req.Email == "" || req.Password == "" {
+	email := strings.TrimSpace(req.Email)
+	username := strings.TrimSpace(req.Username)
+	displayName := strings.TrimSpace(req.Name)
+
+	if email == "" || username == "" || req.Password == "" {
 		return renderApiError(c, http.StatusBadRequest, dto.ErrBadRequest)
 	}
 
-	if req.Name == "" {
-		req.Name = req.Email
+	if displayName == "" {
+		displayName = username
 	}
 
 	language := req.Language
@@ -141,23 +145,14 @@ func (ac *authController) Register(c echo.Context) error {
 			Admin:  false,
 			Active: false,
 		},
-		UserSecrets: model.UserSecrets{Email: req.Email},
+		UserSecrets: model.UserSecrets{Email: email},
 	}
 
 	u.ResetDefaults()
 	u.Language = language
 
-	profileUsername := strings.TrimSpace(req.Username)
-	if profileUsername == "" {
-		at := strings.IndexByte(req.Email, '@')
-		if at > 0 {
-			profileUsername = req.Email[:at]
-		} else {
-			profileUsername = req.Email
-		}
-	}
-	u.Profile.Username = profileUsername
-	u.Profile.DisplayName = req.Name
+	u.Profile.Username = username
+	u.Profile.DisplayName = displayName
 
 	if err := u.SetPassword(req.Password); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)

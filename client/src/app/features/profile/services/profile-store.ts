@@ -33,6 +33,7 @@ export class ProfileStore {
   public readonly disconnectingHammerhead = signal(false);
 
   public readonly profileForm: FormGroup = this.fb.group({
+    name: ['', Validators.required],
     birthdate: [''],
     api_active: [false],
     totals_show: ['all'],
@@ -73,6 +74,7 @@ export class ProfileStore {
         }
 
         this.profileForm.patchValue({
+          name: response.results.name,
           birthdate: response.results.birthdate ? response.results.birthdate.split('T')[0] : '',
           api_active: response.results.profile.api_active,
           totals_show: response.results.profile.totals_show,

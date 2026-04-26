@@ -5,6 +5,11 @@
     </div>
     <div class="card-body">
       <div class="mb-3">
+        <label class="form-label" for="name">{{ 'Display name' | translate }}</label>
+        <input class="form-control" formControlName="name" id="name" required type="text" />
+      </div>
+
+      <div class="mb-3">
         <label class="form-label" for="birthdate">
           {{ 'Birthdate' | translate }}
           <small class="text-muted">{{ '(used to estimate max heart rate)' | translate }}</small>
