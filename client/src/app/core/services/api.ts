@@ -561,6 +561,14 @@ export class Api {
     });
   }
 
+  public searchProfiles(query: string): Observable<APIResponse<ActivityPubProfileSummary[]>> {
+    const params = new HttpParams().set('q', query);
+    return this.http.get<APIResponse<ActivityPubProfileSummary[]>>(
+      `${this.baseUrl}/user-profile/search`,
+      { params },
+    );
+  }
+
   public getLocalActivityPubActor(username: string): Observable<ActivityPubActor> {
     return this.http.get<ActivityPubActor>(`/ap/users/${encodeURIComponent(username)}`);
   }

@@ -33,6 +33,11 @@ export const routes: Routes = [
           import('./features/profile/pages/user-profile/user-profile').then((m) => m.UserProfile),
       },
       {
+        path: 'profiles',
+        loadComponent: () =>
+          import('./features/profile/pages/search/search').then((m) => m.ProfileSearchPage),
+      },
+      {
         path: 'workouts',
         children: [
           {

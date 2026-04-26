@@ -24,6 +24,7 @@ import (
 type UserController interface {
 	GetWhoami(c echo.Context) error
 	GetUserProfileByHandle(c echo.Context) error
+	SearchProfiles(c echo.Context) error
 	FollowUserByHandle(c echo.Context) error
 	UnfollowUserByHandle(c echo.Context) error
 	GetTotals(c echo.Context) error
@@ -366,6 +367,78 @@ func (uc *userController) GetUserByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+// SearchProfiles searches followable profiles by username, display name, or exact ActivityPub handle
+// @Summary      Search user profiles
+// @Tags         user
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        q  query     string  false  "Search query or ActivityPub handle"
+// @Produce      json
+// @Success      200  {object}  dto.Response[[]dto.ActivityPubProfileSummaryResponse]
+// @Failure      403  {object}  dto.Response[any]
+// @Failure      500  {object}  dto.Response[any]
+// @Router       /user-profile/search [get]
+func (uc *userController) SearchProfiles(c echo.Context) error {
+	viewer := currentUser(c)
+	if viewer.IsAnonymous() {
+		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
+	}
+
+	query := strings.TrimSpace(c.QueryParam("q"))
+	resp := dto.Response[[]dto.ActivityPubProfileSummaryResponse]{
+		Results: []dto.ActivityPubProfileSummaryResponse{},
+	}
+	if query == "" {
+		return c.JSON(http.StatusOK, resp)
+	}
+
+	results := make([]dto.ActivityPubProfileSummaryResponse, 0, 20)
+	seenHandles := make(map[string]struct{})
+	localQuery := query
+
+	if username, host, parsedAsRemote, err := uc.parseHandleWithHost(c, query); err == nil {
+		localQuery = username
+
+		if parsedAsRemote {
+			if summary, _, err := uc.buildRemoteProfileSummary(c, viewer, username, host); err == nil {
+				results, seenHandles = appendUniqueProfileSummary(results, seenHandles, summary)
+			}
+		} else if targetUser, err := uc.userRepo.GetByHandle(query, uc.localHost(c)); err == nil {
+			if viewer.ID != targetUser.ID && targetUser.ActivityPubEnabled() {
+				summary, err := uc.buildLocalProfileSummary(c, viewer, targetUser)
+				if err != nil {
+					return renderApiError(c, http.StatusInternalServerError, err)
+				}
+
+				results, seenHandles = appendUniqueProfileSummary(results, seenHandles, summary)
+			}
+		}
+	}
+
+	localUsers, err := uc.userRepo.SearchProfiles(localQuery)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	for _, targetUser := range localUsers {
+		if viewer.ID == targetUser.ID {
+			continue
+		}
+
+		summary, err := uc.buildLocalProfileSummary(c, viewer, targetUser)
+		if err != nil {
+			return renderApiError(c, http.StatusInternalServerError, err)
+		}
+
+		results, seenHandles = appendUniqueProfileSummary(results, seenHandles, summary)
+	}
+
+	resp.Results = results
+
+	return c.JSON(http.StatusOK, resp)
+}
+
 // GetUserProfileByHandle returns profile header data and social stats for an ActivityPub-enabled user
 // @Summary      Get user profile by ActivityPub handle
 // @Tags         user
@@ -406,59 +479,13 @@ func (uc *userController) GetUserProfileByHandle(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, gorm.ErrRecordNotFound)
 	}
 
-	postsQuery := model.ScopeVisibleWorkouts(
-		uc.db.Model(&model.Workout{}),
-		targetUser.Profile.ID,
-		viewer.Profile.ID,
-	)
-
-	var postsCount int64
-	if err := postsQuery.Count(&postsCount).Error; err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
-	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.Profile.ID)
+	summary, err := uc.buildLocalProfileSummary(c, viewer, targetUser)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
-
-	targetActorIRI := uc.localActorIRI(c, targetUser)
-	followingCount, err := uc.followerRepo.CountApprovedFollowing(targetUser.Profile.ID)
-	if err != nil {
-		return renderApiError(c, http.StatusInternalServerError, err)
-	}
-
-	isFollowing := false
-	if viewer.ID != targetUser.ID {
-		isFollowing, err = uc.followerRepo.IsFollowingApproved(viewer.Profile.ID, targetUser.Profile.ID)
-		if err != nil {
-			return renderApiError(c, http.StatusInternalServerError, err)
-		}
-	}
-
-	host := uc.cfg.Host
-	if host == "" {
-		host = c.Request().Host
-	}
-
-	memberSince := targetUser.CreatedAt.UTC()
 
 	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
-		Results: dto.ActivityPubProfileSummaryResponse{
-			ID:             targetUser.ID,
-			Username:       targetUser.Profile.Username,
-			Name:           targetUser.Profile.DisplayName,
-			Handle:         fmt.Sprintf("@%s@%s", targetUser.Profile.Username, host),
-			ActorURL:       targetActorIRI,
-			IconURL:        "",
-			IsExternal:     false,
-			IsOwn:          viewer.ID == targetUser.ID,
-			IsFollowing:    isFollowing,
-			PostsCount:     postsCount,
-			FollowersCount: followersCount,
-			FollowingCount: followingCount,
-			MemberSince:    memberSince,
-		},
+		Results: summary,
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -624,14 +651,31 @@ func (uc *userController) parseHandleWithHost(c echo.Context, handle string) (st
 }
 
 func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host string) error {
+	summary, status, err := uc.buildRemoteProfileSummary(c, currentUser(c), username, host)
+	if err != nil {
+		return renderApiError(c, status, err)
+	}
+
+	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
+		Results: summary,
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (uc *userController) buildRemoteProfileSummary(
+	c echo.Context,
+	viewer *model.User,
+	username, host string,
+) (dto.ActivityPubProfileSummaryResponse, int, error) {
 	actorIRI, err := aputil.ResolveActorIRIFromWebFinger(c.Request().Context(), username, host)
 	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+		return dto.ActivityPubProfileSummaryResponse{}, http.StatusNotFound, err
 	}
 
 	actor, err := aputil.LoadRemoteActor(c.Request().Context(), actorIRI)
 	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+		return dto.ActivityPubProfileSummaryResponse{}, http.StatusNotFound, err
 	}
 
 	actorURL := actorIRI
@@ -641,7 +685,7 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 
 	remoteProfile, err := uc.apProfileSvc.GetByActorIRI(c.Request().Context(), actorURL)
 	if err != nil {
-		return renderApiError(c, http.StatusNotFound, err)
+		return dto.ActivityPubProfileSummaryResponse{}, http.StatusNotFound, err
 	}
 
 	followersCount, _ := aputil.LoadCollectionTotalItems(c.Request().Context(), itemIRIString(actor.Followers))
@@ -663,34 +707,29 @@ func (uc *userController) getRemoteProfileSummary(c echo.Context, username, host
 		iconURL = *remoteProfile.AvatarRemoteURL
 	}
 
-	viewer := currentUser(c)
 	isFollowing := false
 	if viewer != nil && !viewer.IsAnonymous() {
 		isFollowing, err = uc.followerRepo.IsFollowingActive(viewer.Profile.ID, remoteProfile.ID)
 		if err != nil {
-			return renderApiError(c, http.StatusInternalServerError, err)
+			return dto.ActivityPubProfileSummaryResponse{}, http.StatusInternalServerError, err
 		}
 	}
 
-	resp := dto.Response[dto.ActivityPubProfileSummaryResponse]{
-		Results: dto.ActivityPubProfileSummaryResponse{
-			ID:             0,
-			Username:       username,
-			Name:           name,
-			Handle:         fmt.Sprintf("@%s@%s", username, host),
-			ActorURL:       actorURL,
-			IconURL:        iconURL,
-			IsExternal:     true,
-			IsOwn:          false,
-			IsFollowing:    isFollowing,
-			PostsCount:     postsCount,
-			FollowersCount: followersCount,
-			FollowingCount: followingCount,
-			MemberSince:    memberSince,
-		},
-	}
-
-	return c.JSON(http.StatusOK, resp)
+	return dto.ActivityPubProfileSummaryResponse{
+		ID:             0,
+		Username:       username,
+		Name:           name,
+		Handle:         fmt.Sprintf("@%s@%s", username, host),
+		ActorURL:       actorURL,
+		IconURL:        iconURL,
+		IsExternal:     true,
+		IsOwn:          false,
+		IsFollowing:    isFollowing,
+		PostsCount:     postsCount,
+		FollowersCount: followersCount,
+		FollowingCount: followingCount,
+		MemberSince:    memberSince,
+	}, http.StatusOK, nil
 }
 
 func (uc *userController) followRemoteUserByHandle(c echo.Context, handle string) error {
@@ -902,6 +941,71 @@ func actorIconURL(actor *vocab.Actor) string {
 	})
 
 	return iconURL
+}
+
+func (uc *userController) buildLocalProfileSummary(
+	c echo.Context,
+	viewer, targetUser *model.User,
+) (dto.ActivityPubProfileSummaryResponse, error) {
+	postsQuery := model.ScopeVisibleWorkouts(
+		uc.db.Model(&model.Workout{}),
+		targetUser.Profile.ID,
+		viewer.Profile.ID,
+	)
+
+	var postsCount int64
+	if err := postsQuery.Count(&postsCount).Error; err != nil {
+		return dto.ActivityPubProfileSummaryResponse{}, err
+	}
+
+	followersCount, err := uc.followerRepo.CountApprovedFollowers(targetUser.Profile.ID)
+	if err != nil {
+		return dto.ActivityPubProfileSummaryResponse{}, err
+	}
+
+	targetActorIRI := uc.localActorIRI(c, targetUser)
+	followingCount, err := uc.followerRepo.CountApprovedFollowing(targetUser.Profile.ID)
+	if err != nil {
+		return dto.ActivityPubProfileSummaryResponse{}, err
+	}
+
+	isFollowing := false
+	if viewer.ID != targetUser.ID {
+		isFollowing, err = uc.followerRepo.IsFollowingApproved(viewer.Profile.ID, targetUser.Profile.ID)
+		if err != nil {
+			return dto.ActivityPubProfileSummaryResponse{}, err
+		}
+	}
+
+	return dto.ActivityPubProfileSummaryResponse{
+		ID:             targetUser.ID,
+		Username:       targetUser.Profile.Username,
+		Name:           targetUser.Profile.DisplayName,
+		Handle:         uc.renderHandle(c, targetUser.Profile.Username),
+		ActorURL:       targetActorIRI,
+		IconURL:        "",
+		IsExternal:     false,
+		IsOwn:          viewer.ID == targetUser.ID,
+		IsFollowing:    isFollowing,
+		PostsCount:     postsCount,
+		FollowersCount: followersCount,
+		FollowingCount: followingCount,
+		MemberSince:    targetUser.CreatedAt.UTC(),
+	}, nil
+}
+
+func appendUniqueProfileSummary(
+	results []dto.ActivityPubProfileSummaryResponse,
+	seenHandles map[string]struct{},
+	summary dto.ActivityPubProfileSummaryResponse,
+) ([]dto.ActivityPubProfileSummaryResponse, map[string]struct{}) {
+	if _, exists := seenHandles[summary.Handle]; exists {
+		return results, seenHandles
+	}
+
+	seenHandles[summary.Handle] = struct{}{}
+
+	return append(results, summary), seenHandles
 }
 
 func (uc *userController) localActorIRI(c echo.Context, user *model.User) string {

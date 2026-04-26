@@ -15,6 +15,7 @@ type User interface {
 	GetByEmail(email string) (*model.User, error)
 	GetByUsername(username string) (*model.User, error)
 	GetByHandle(handle, localHost string) (*model.User, error)
+	SearchProfiles(query string) ([]*model.User, error)
 	GetByAPIKey(key string) (*model.User, error)
 }
 
@@ -98,6 +99,33 @@ func (r *userRepository) GetByAPIKey(key string) (*model.User, error) {
 	user.SetDB(r.db)
 
 	return &user, nil
+}
+
+func (r *userRepository) SearchProfiles(query string) ([]*model.User, error) {
+	var users []*model.User
+
+	normalized := strings.ToLower(strings.TrimSpace(query))
+	if normalized == "" {
+		return users, nil
+	}
+
+	likeQuery := "%" + normalized + "%"
+
+	if err := r.currentUserQuery().
+		Joins("JOIN profiles ON profiles.user_id = users.id").
+		Where("users.active = ? AND users.activity_pub = ?", true, true).
+		Where(
+			"LOWER(profiles.username) LIKE ? OR LOWER(profiles.display_name) LIKE ?",
+			likeQuery,
+			likeQuery,
+		).
+		Order("profiles.username ASC").
+		Limit(20).
+		Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func (r *userRepository) currentUserQuery() *gorm.DB {

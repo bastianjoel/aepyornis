@@ -13,6 +13,16 @@
       <a class="navbar-brand fw-bold" href="#"> Aepyornis </a>
     }
 
+    @if (userName()) {
+      <a
+        aria-label="Search profiles"
+        class="btn btn-link link-body-emphasis d-inline-flex align-items-center ms-2"
+        routerLink="/profiles"
+      >
+        <app-icon name="search" size="18px" />
+      </a>
+    }
+
     <div class="ms-auto">
       <div class="d-flex align-items-center gap-3">
         @if (userName()) {
