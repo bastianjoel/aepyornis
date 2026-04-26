@@ -56,6 +56,7 @@ export const ICON_MAP: Record<string, string> = {
   translate: 'faSolidLanguage',
   expand: 'faSolidArrowsLeftRight',
   share: 'faSolidShareFromSquare',
+  search: 'faSolidMagnifyingGlass',
   'generate-share': 'faSolidRetweet',
   logout: 'faSolidRightFromBracket',
 

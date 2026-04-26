@@ -133,3 +133,39 @@ func TestUserRepository_GetAll(t *testing.T) {
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(users), 2)
 }
+
+func TestUserRepository_SearchProfiles(t *testing.T) {
+	db := createRepositoryMemoryDB(t)
+	matchByUsername := createRepositoryUser(t, db, "runner-one", "Alice Runner", "repo-search-key-1")
+	matchByDisplayName := createRepositoryUser(t, db, "rider-two", "Bob Search", "repo-search-key-2")
+	notActivityPub := createRepositoryUser(t, db, "private-user", "Charlie Search", "repo-search-key-3")
+	matchByUsername.ActivityPub = true
+	matchByDisplayName.ActivityPub = true
+	require.NoError(t, matchByUsername.Save(db))
+	require.NoError(t, matchByDisplayName.Save(db))
+	notActivityPub.ActivityPub = false
+	require.NoError(t, notActivityPub.Save(db))
+
+	repo, err := NewUser(createRepositoryInjector(db))
+	require.NoError(t, err)
+
+	t.Run("matches username and display name", func(t *testing.T) {
+		users, err := repo.SearchProfiles("search")
+		require.NoError(t, err)
+
+		usernames := make([]string, 0, len(users))
+		for _, user := range users {
+			usernames = append(usernames, user.Profile.Username)
+		}
+
+		assert.Contains(t, usernames, matchByDisplayName.Profile.Username)
+		assert.NotContains(t, usernames, notActivityPub.Profile.Username)
+	})
+
+	t.Run("matches partial username", func(t *testing.T) {
+		users, err := repo.SearchProfiles("runner")
+		require.NoError(t, err)
+		require.Len(t, users, 1)
+		assert.Equal(t, matchByUsername.Profile.Username, users[0].Profile.Username)
+	})
+}
