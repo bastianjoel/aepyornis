@@ -4,9 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
+	"gorm.io/gorm"
 )
 
 type AdminController interface {
@@ -18,12 +22,21 @@ type AdminController interface {
 }
 
 type adminController struct {
-	context            *container.Container
+	cfg                *config.Config
+	db                 *gorm.DB
 	resetConfiguration func() error
+	userRepo           repository.User
+	version            *version.Version
 }
 
-func NewAdminController(c *container.Container, resetConfiguration func() error) AdminController {
-	return &adminController{context: c, resetConfiguration: resetConfiguration}
+func NewAdminController(injector do.Injector, resetConfiguration func() error) AdminController {
+	return &adminController{
+		cfg:                do.MustInvoke[*config.Config](injector),
+		db:                 do.MustInvoke[*gorm.DB](injector),
+		resetConfiguration: resetConfiguration,
+		userRepo:           do.MustInvoke[repository.User](injector),
+		version:            do.MustInvoke[*version.Version](injector),
+	}
 }
 
 // GetUsers returns all users (admin only)
@@ -38,7 +51,7 @@ func NewAdminController(c *container.Container, resetConfiguration func() error)
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /admin/users [get]
 func (ac *adminController) GetUsers(c echo.Context) error {
-	users, err := ac.context.UserRepo().GetAll()
+	users, err := ac.userRepo.GetAll()
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -73,7 +86,7 @@ func (ac *adminController) GetUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user, err := ac.context.UserRepo().GetByID(userID)
+	user, err := ac.userRepo.GetByID(userID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -104,7 +117,7 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user, err := ac.context.UserRepo().GetByID(userID)
+	user, err := ac.userRepo.GetByID(userID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
@@ -128,11 +141,11 @@ func (ac *adminController) UpdateUser(c echo.Context) error {
 		}
 	}
 
-	if err := user.Save(ac.context.GetDB()); err != nil {
+	if err := user.Save(ac.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if err := user.Profile.Save(ac.context.GetDB()); err != nil {
+	if err := user.Profile.Save(ac.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -161,12 +174,12 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	user, err := ac.context.UserRepo().GetByID(userID)
+	user, err := ac.userRepo.GetByID(userID)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
-	if err := user.Delete(ac.context.GetDB()); err != nil {
+	if err := user.Delete(ac.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -190,13 +203,13 @@ func (ac *adminController) DeleteUser(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /admin/config [put]
 func (ac *adminController) UpdateConfig(c echo.Context) error {
-	var cnf container.Config
+	var cnf config.Config
 
 	if err := c.Bind(&cnf); err != nil {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	if err := cnf.Save(ac.context.GetDB()); err != nil {
+	if err := cnf.Save(ac.db); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -204,8 +217,8 @@ func (ac *adminController) UpdateConfig(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	cfg := ac.context.GetConfig()
-	v := ac.context.GetVersion()
+	cfg := ac.cfg
+	v := ac.version
 
 	resp := dto.Response[dto.AppInfoResponse]{
 		Results: dto.AppInfoResponse{

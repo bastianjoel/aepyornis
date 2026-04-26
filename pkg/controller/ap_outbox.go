@@ -8,13 +8,15 @@ import (
 	"strconv"
 	"strings"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -27,13 +29,23 @@ type ApOutboxController interface {
 }
 
 type apOutboxController struct {
-	context *container.Container
+	apOutboxRepo     repository.APOutbox
+	cfg              *config.Config
+	db               *gorm.DB
+	userRepo         repository.User
+	workoutReplyRepo repository.WorkoutReply
 }
 
 const outboxPageSize = 20
 
-func NewApOutboxController(c *container.Container) ApOutboxController {
-	return &apOutboxController{context: c}
+func NewApOutboxController(injector do.Injector) ApOutboxController {
+	return &apOutboxController{
+		apOutboxRepo:     do.MustInvoke[repository.APOutbox](injector),
+		cfg:              do.MustInvoke[*config.Config](injector),
+		db:               do.MustInvoke[*gorm.DB](injector),
+		userRepo:         do.MustInvoke[repository.User](injector),
+		workoutReplyRepo: do.MustInvoke[repository.WorkoutReply](injector),
+	}
 }
 
 func (ac *apOutboxController) targetActivityPubUser(c echo.Context) (*model.User, error) {
@@ -42,7 +54,7 @@ func (ac *apOutboxController) targetActivityPubUser(c echo.Context) (*model.User
 		return nil, errors.New("username not found")
 	}
 
-	user, err := ac.context.UserRepo().GetByUsername(username)
+	user, err := ac.userRepo.GetByUsername(username)
 	if err != nil || !user.ActivityPubEnabled() {
 		return nil, errors.New("resource not found")
 	}
@@ -74,15 +86,15 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 		}
 	}
 
-	actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-		Host:           ac.context.GetConfig().Host,
-		WebRoot:        ac.context.GetConfig().WebRoot,
+	actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
+		Host:           ac.cfg.Host,
+		WebRoot:        ac.cfg.WebRoot,
 		FallbackHost:   c.Request().Host,
 		FallbackScheme: c.Scheme(),
 	}, targetUser.Profile.Username)
 	outboxURL := actorURL + "/outbox"
 
-	total, err := ac.context.APOutboxRepo().CountEntriesByUser(targetUser.ID)
+	total, err := ac.apOutboxRepo.CountEntriesByUser(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -107,7 +119,7 @@ func (ac *apOutboxController) Outbox(c echo.Context) error { //nolint:gocyclo
 	}
 
 	offset := (page - 1) * outboxPageSize
-	entries, err := ac.context.APOutboxRepo().GetEntriesByUser(targetUser.ID, outboxPageSize, offset)
+	entries, err := ac.apOutboxRepo.GetEntriesByUser(targetUser.ID, outboxPageSize, offset)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -175,7 +187,7 @@ func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := ac.context.APOutboxRepo().GetEntryByUUIDAndUser(targetUser.ID, outboxID)
+	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
@@ -188,7 +200,7 @@ func (ac *apOutboxController) OutboxItem(c echo.Context) error {
 
 	// For workout entries, add replies collection info to the note
 	if entry.APStatusWorkout != nil {
-		replyCount, countErr := ac.context.WorkoutReplyRepo().CountByWorkoutID(entry.APStatusWorkout.WorkoutID)
+		replyCount, countErr := ac.workoutReplyRepo.CountByWorkoutID(entry.APStatusWorkout.WorkoutID)
 		if countErr == nil && replyCount > 0 {
 			// Deserialize the activity to add replies collection
 			var activity map[string]any
@@ -234,7 +246,7 @@ func (ac *apOutboxController) OutboxFit(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := ac.context.APOutboxRepo().GetEntryByUUIDAndUser(targetUser.ID, outboxID)
+	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
@@ -272,7 +284,7 @@ func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := ac.context.APOutboxRepo().GetEntryByUUIDAndUser(targetUser.ID, outboxID)
+	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
@@ -285,7 +297,7 @@ func (ac *apOutboxController) OutboxRouteImage(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, errors.New("route image not found"))
 	}
 
-	attachment, attachmentErr := model.GetRouteImageAttachment(ac.context.GetDB(), entry.APStatusWorkout.WorkoutID)
+	attachment, attachmentErr := model.GetRouteImageAttachment(ac.db, entry.APStatusWorkout.WorkoutID)
 	if attachmentErr != nil {
 		if errors.Is(attachmentErr, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, errors.New("route image not found"))
@@ -380,7 +392,7 @@ func (ac *apOutboxController) OutboxReplies(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
-	entry, err := ac.context.APOutboxRepo().GetEntryByUUIDAndUser(targetUser.ID, outboxID)
+	entry, err := ac.apOutboxRepo.GetEntryByUUIDAndUser(targetUser.ID, outboxID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return renderApiError(c, http.StatusNotFound, err)
@@ -403,7 +415,7 @@ func (ac *apOutboxController) OutboxReplies(c echo.Context) error {
 	}
 
 	// Get replies for this workout
-	replies, err := ac.context.WorkoutReplyRepo().ListByWorkoutID(entry.APStatusWorkout.WorkoutID, 10000, 0)
+	replies, err := ac.workoutReplyRepo.ListByWorkoutID(entry.APStatusWorkout.WorkoutID, 10000, 0)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}

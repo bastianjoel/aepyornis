@@ -3,10 +3,11 @@ package controller
 import (
 	"net/http"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 	"github.com/spf13/cast"
 )
 
@@ -19,11 +20,13 @@ type EquipmentController interface {
 }
 
 type equipmentController struct {
-	context *container.Container
+	equipmentRepo repository.Equipment
 }
 
-func NewEquipmentController(c *container.Container) EquipmentController {
-	return &equipmentController{context: c}
+func NewEquipmentController(injector do.Injector) EquipmentController {
+	return &equipmentController{
+		equipmentRepo: do.MustInvoke[repository.Equipment](injector),
+	}
 }
 
 func (ec *equipmentController) getEquipment(c echo.Context) (*model.Equipment, error) {
@@ -32,10 +35,10 @@ func (ec *equipmentController) getEquipment(c echo.Context) (*model.Equipment, e
 		return nil, err
 	}
 
-	user := ec.context.GetUser(c)
+	user := currentUser(c)
 	profileID := user.Profile.ID
 
-	e, err := ec.context.EquipmentRepo().GetByUserID(profileID, id)
+	e, err := ec.equipmentRepo.GetByUserID(profileID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +60,7 @@ func (ec *equipmentController) getEquipment(c echo.Context) (*model.Equipment, e
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /equipment [get]
 func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
-	user := ec.context.GetUser(c)
+	user := currentUser(c)
 	profileID := user.Profile.ID
 
 	var pagination dto.PaginationParams
@@ -66,12 +69,12 @@ func (ec *equipmentController) GetEquipmentList(c echo.Context) error {
 	}
 	pagination.SetDefaults()
 
-	totalCount, err := ec.context.EquipmentRepo().CountByUserID(profileID)
+	totalCount, err := ec.equipmentRepo.CountByUserID(profileID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	equipment, err := ec.context.EquipmentRepo().ListByUserID(profileID, pagination.PerPage, pagination.GetOffset())
+	equipment, err := ec.equipmentRepo.ListByUserID(profileID, pagination.PerPage, pagination.GetOffset())
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -126,7 +129,7 @@ func (ec *equipmentController) GetEquipment(c echo.Context) error {
 // @Failure      500  {object}  dto.Response[any]
 // @Router       /equipment [post]
 func (ec *equipmentController) CreateEquipment(c echo.Context) error {
-	user := ec.context.GetUser(c)
+	user := currentUser(c)
 
 	var e model.Equipment
 	if err := c.Bind(&e); err != nil {
@@ -135,7 +138,7 @@ func (ec *equipmentController) CreateEquipment(c echo.Context) error {
 
 	e.ProfileID = user.Profile.ID
 
-	if err := ec.context.EquipmentRepo().Save(&e); err != nil {
+	if err := ec.equipmentRepo.Save(&e); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -161,7 +164,7 @@ func (ec *equipmentController) CreateEquipment(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /equipment/{id} [put]
 func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
-	user := ec.context.GetUser(c)
+	user := currentUser(c)
 
 	e, err := ec.getEquipment(c)
 	if err != nil {
@@ -180,7 +183,7 @@ func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
 
 	e.ProfileID = user.Profile.ID
 
-	if err := ec.context.EquipmentRepo().Save(e); err != nil {
+	if err := ec.equipmentRepo.Save(e); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -203,7 +206,7 @@ func (ec *equipmentController) UpdateEquipment(c echo.Context) error {
 // @Failure      404  {object}  dto.Response[any]
 // @Router       /equipment/{id} [delete]
 func (ec *equipmentController) DeleteEquipment(c echo.Context) error {
-	user := ec.context.GetUser(c)
+	user := currentUser(c)
 
 	e, err := ec.getEquipment(c)
 	if err != nil {
@@ -214,7 +217,7 @@ func (ec *equipmentController) DeleteEquipment(c echo.Context) error {
 		return renderApiError(c, http.StatusForbidden, dto.ErrNotAuthorized)
 	}
 
-	if err := ec.context.EquipmentRepo().Delete(e); err != nil {
+	if err := ec.equipmentRepo.Delete(e); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 

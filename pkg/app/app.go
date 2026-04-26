@@ -8,11 +8,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/geocoder"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	_ "github.com/AepyornisNet/aepyornis/pkg/model/migrations"
-	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/version"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
 	"github.com/alexedwards/scs/v2"
@@ -21,6 +20,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
+	"github.com/samber/do/v2"
 	"gorm.io/gorm"
 )
 
@@ -36,13 +36,12 @@ type App struct {
 	sessionManager *scs.SessionManager
 	translator     *i18n.Locale
 	Version        version.Version
-	Config         *container.Config
-	container      container.Container
-	repositories   *repository.Repositories
+	Config         *config.Config
+	injector       do.Injector
 }
 
 func (a *App) Serve() error {
-	w, err := worker.New(&a.container)
+	w, err := worker.New(a.injector)
 	if err != nil {
 		return err
 	}
@@ -55,7 +54,7 @@ func (a *App) Serve() error {
 }
 
 func (a *App) Configure() error {
-	cfg, err := container.NewConfig()
+	cfg, err := config.NewConfig()
 	if err != nil {
 		return err
 	}
@@ -71,8 +70,6 @@ func (a *App) Configure() error {
 	if err := a.ConfigureDatabase(); err != nil {
 		return err
 	}
-
-	a.repositories = repository.New(a.db)
 
 	a.ConfigureGeocoder()
 
@@ -161,7 +158,7 @@ func (a *App) ConfigureLogger() {
 func NewApp(v version.Version) *App {
 	return &App{
 		Version:   v,
-		Config:    &container.Config{},
+		Config:    &config.Config{},
 		logger:    newLogger(false),
 		rawLogger: newLogger(false),
 	}

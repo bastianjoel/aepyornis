@@ -7,12 +7,14 @@ import (
 	"strconv"
 	"strings"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 type ApUserController interface {
@@ -22,13 +24,19 @@ type ApUserController interface {
 }
 
 type apUserController struct {
-	context *container.Container
+	cfg          *config.Config
+	followerRepo repository.Follower
+	userRepo     repository.User
 }
 
 const followersPageSize = 20
 
-func NewApUserController(c *container.Container) ApUserController {
-	return &apUserController{context: c}
+func NewApUserController(injector do.Injector) ApUserController {
+	return &apUserController{
+		cfg:          do.MustInvoke[*config.Config](injector),
+		followerRepo: do.MustInvoke[repository.Follower](injector),
+		userRepo:     do.MustInvoke[repository.User](injector),
+	}
 }
 
 // GetUser returns the ActivityPub actor for a local user
@@ -45,7 +53,7 @@ func (ac *apUserController) GetUser(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, errors.New("username not found"))
 	}
 
-	user, err := ac.context.UserRepo().GetByUsername(username)
+	user, err := ac.userRepo.GetByUsername(username)
 	if err != nil || !user.ActivityPubEnabled() {
 		return renderApiError(c, http.StatusNotFound, errors.New("resource not found"))
 	}
@@ -90,7 +98,7 @@ func (ac *apUserController) targetActivityPubUser(c echo.Context) (*model.User, 
 		return nil, errors.New("username not found")
 	}
 
-	user, err := ac.context.UserRepo().GetByUsername(username)
+	user, err := ac.userRepo.GetByUsername(username)
 	if err != nil || !user.ActivityPubEnabled() {
 		return nil, errors.New("resource not found")
 	}
@@ -122,7 +130,7 @@ func (ac *apUserController) Following(c echo.Context) error {
 		}
 	}
 
-	following, err := ac.context.FollowerRepo().ListApprovedFollowing(targetUser.ID)
+	following, err := ac.followerRepo.ListApprovedFollowing(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -135,9 +143,9 @@ func (ac *apUserController) Following(c echo.Context) error {
 		items = append(items, vocab.IRI(entry.ActorIRI))
 	}
 
-	followingURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-		Host:           ac.context.GetConfig().Host,
-		WebRoot:        ac.context.GetConfig().WebRoot,
+	followingURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
+		Host:           ac.cfg.Host,
+		WebRoot:        ac.cfg.WebRoot,
 		FallbackHost:   c.Request().Host,
 		FallbackScheme: "https",
 	}, targetUser.Profile.Username) + "/following"
@@ -214,7 +222,7 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		}
 	}
 
-	followers, err := ac.context.FollowerRepo().ListApprovedFollowers(targetUser.ID)
+	followers, err := ac.followerRepo.ListApprovedFollowers(targetUser.ID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
@@ -227,9 +235,9 @@ func (ac *apUserController) Followers(c echo.Context) error {
 		items = append(items, vocab.IRI(follower.ActorIRI))
 	}
 
-	followersURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-		Host:           ac.context.GetConfig().Host,
-		WebRoot:        ac.context.GetConfig().WebRoot,
+	followersURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
+		Host:           ac.cfg.Host,
+		WebRoot:        ac.cfg.WebRoot,
 		FallbackHost:   c.Request().Host,
 		FallbackScheme: "https",
 	}, targetUser.Profile.Username) + "/followers"

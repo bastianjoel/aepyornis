@@ -9,18 +9,23 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/AepyornisNet/aepyornis/pkg/model/dto"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/AepyornisNet/aepyornis/pkg/worker"
+	"github.com/alexedwards/scs/v2"
 	gorand "github.com/cat-dealer/go-rand/v2"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
+	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
 )
 
@@ -43,8 +48,13 @@ type HammerheadController interface {
 }
 
 type hammerheadController struct {
-	context *container.Container
-	client  *http.Client
+	cfg            *config.Config
+	db             *gorm.DB
+	httpClient     *http.Client
+	logger         *slog.Logger
+	sessionManager *scs.SessionManager
+	userRepo       repository.User
+	workerClient   *gue.Client
 }
 
 type hammerheadTokenResponse struct {
@@ -65,20 +75,25 @@ type hammerheadConnectionResponse struct {
 	HammerheadUserID string `json:"hammerhead_user_id,omitempty"`
 }
 
-func NewHammerheadController(c *container.Container) HammerheadController {
+func NewHammerheadController(injector do.Injector) HammerheadController {
 	return &hammerheadController{
-		context: c,
-		client: &http.Client{
+		cfg:            do.MustInvoke[*config.Config](injector),
+		db:             do.MustInvoke[*gorm.DB](injector),
+		logger:         do.MustInvoke[*slog.Logger](injector),
+		sessionManager: do.MustInvoke[*scs.SessionManager](injector),
+		userRepo:       do.MustInvoke[repository.User](injector),
+		workerClient:   do.MustInvoke[*gue.Client](injector),
+		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 	}
 }
 
 func (hc *hammerheadController) GetConnection(c echo.Context) error {
-	user := hc.context.GetUser(c)
+	user := currentUser(c)
 
 	var conn model.HammerheadConnection
-	err := hc.context.GetDB().Where("user_id = ?", user.ID).First(&conn).Error
+	err := hc.db.Where("user_id = ?", user.ID).First(&conn).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.JSON(http.StatusOK, dto.Response[hammerheadConnectionResponse]{
@@ -98,15 +113,15 @@ func (hc *hammerheadController) GetConnection(c echo.Context) error {
 }
 
 func (hc *hammerheadController) Connect(c echo.Context) error {
-	user := hc.context.GetUser(c)
-	cfg := hc.context.GetConfig()
+	user := currentUser(c)
+	cfg := hc.cfg
 	if cfg.HammerheadClientID == "" || cfg.HammerheadSecret == "" {
 		return renderApiError(c, http.StatusBadRequest, ErrHammerheadNotConfigured)
 	}
 
 	state := gorand.String(32, gorand.GetAlphaNumericPool())
-	hc.context.GetSessionManager().Put(c.Request().Context(), hammerheadOAuthStateKey, state)
-	hc.context.GetSessionManager().Put(c.Request().Context(), hammerheadOAuthUserIDKey, strconv.FormatUint(user.ID, 10))
+	hc.sessionManager.Put(c.Request().Context(), hammerheadOAuthStateKey, state)
+	hc.sessionManager.Put(c.Request().Context(), hammerheadOAuthUserIDKey, strconv.FormatUint(user.ID, 10))
 
 	authorizeURL := url.URL{
 		Scheme: "https",
@@ -127,7 +142,7 @@ func (hc *hammerheadController) Connect(c echo.Context) error {
 }
 
 func (hc *hammerheadController) Callback(c echo.Context) error {
-	user := hc.context.GetUser(c)
+	user := currentUser(c)
 
 	if oauthErr := c.QueryParam("error"); oauthErr != "" {
 		return hc.redirectToAppsPage(c, "oauth_error")
@@ -139,15 +154,15 @@ func (hc *hammerheadController) Callback(c echo.Context) error {
 		return hc.redirectToAppsPage(c, "invalid_callback")
 	}
 
-	savedState := hc.context.GetSessionManager().GetString(c.Request().Context(), hammerheadOAuthStateKey)
-	savedUserID := hc.context.GetSessionManager().GetString(c.Request().Context(), hammerheadOAuthUserIDKey)
+	savedState := hc.sessionManager.GetString(c.Request().Context(), hammerheadOAuthStateKey)
+	savedUserID := hc.sessionManager.GetString(c.Request().Context(), hammerheadOAuthUserIDKey)
 	if savedState == "" || state != savedState || savedUserID != strconv.FormatUint(user.ID, 10) {
 		return hc.redirectToAppsPage(c, "invalid_state")
 	}
 
 	tokenResp, err := hc.exchangeCodeForToken(c.Request().Context(), code, hc.redirectURI(c))
 	if err != nil {
-		hc.context.Logger().Warn("Hammerhead token exchange failed", "error", err)
+		hc.logger.Warn("Hammerhead token exchange failed", "error", err)
 		return hc.redirectToAppsPage(c, "token_exchange_failed")
 	}
 
@@ -156,7 +171,7 @@ func (hc *hammerheadController) Callback(c echo.Context) error {
 	}
 
 	var existingByHammerhead model.HammerheadConnection
-	err = hc.context.GetDB().Where("hammerhead_user_id = ? AND user_id <> ?", tokenResp.UserID, user.ID).First(&existingByHammerhead).Error
+	err = hc.db.Where("hammerhead_user_id = ? AND user_id <> ?", tokenResp.UserID, user.ID).First(&existingByHammerhead).Error
 	if err == nil {
 		return hc.redirectToAppsPage(c, "already_connected")
 	}
@@ -170,7 +185,7 @@ func (hc *hammerheadController) Callback(c echo.Context) error {
 	}
 
 	var conn model.HammerheadConnection
-	err = hc.context.GetDB().Where("user_id = ?", user.ID).First(&conn).Error
+	err = hc.db.Where("user_id = ?", user.ID).First(&conn).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return hc.redirectToAppsPage(c, "save_failed")
 	}
@@ -182,8 +197,8 @@ func (hc *hammerheadController) Callback(c echo.Context) error {
 	conn.Scope = hammerheadOAuthScope
 	conn.ExpiresAt = expiresAt
 
-	if err := hc.context.GetDB().Save(&conn).Error; err != nil {
-		hc.context.Logger().Warn("Failed to save Hammerhead connection", "error", err)
+	if err := hc.db.Save(&conn).Error; err != nil {
+		hc.logger.Warn("Failed to save Hammerhead connection", "error", err)
 		return hc.redirectToAppsPage(c, "save_failed")
 	}
 
@@ -191,10 +206,10 @@ func (hc *hammerheadController) Callback(c echo.Context) error {
 }
 
 func (hc *hammerheadController) Disconnect(c echo.Context) error {
-	user := hc.context.GetUser(c)
+	user := currentUser(c)
 
 	var conn model.HammerheadConnection
-	err := hc.context.GetDB().Where("user_id = ?", user.ID).First(&conn).Error
+	err := hc.db.Where("user_id = ?", user.ID).First(&conn).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.JSON(http.StatusOK, dto.Response[map[string]string]{
@@ -205,13 +220,13 @@ func (hc *hammerheadController) Disconnect(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	if cfg := hc.context.GetConfig(); cfg.HammerheadClientID != "" && cfg.HammerheadSecret != "" {
+	if cfg := hc.cfg; cfg.HammerheadClientID != "" && cfg.HammerheadSecret != "" {
 		if err := hc.deauthorize(c.Request().Context(), conn.AccessToken); err != nil {
-			hc.context.Logger().Warn("Hammerhead deauthorize failed", "error", err)
+			hc.logger.Warn("Hammerhead deauthorize failed", "error", err)
 		}
 	}
 
-	if err := hc.context.GetDB().Delete(&conn).Error; err != nil {
+	if err := hc.db.Delete(&conn).Error; err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -240,7 +255,7 @@ func (hc *hammerheadController) Webhook(c echo.Context) error {
 	}
 
 	var conn model.HammerheadConnection
-	err = hc.context.GetDB().Where("hammerhead_user_id = ?", payload.UserID).First(&conn).Error
+	err = hc.db.Where("hammerhead_user_id = ?", payload.UserID).First(&conn).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.JSON(http.StatusOK, dto.Response[map[string]string]{
@@ -251,27 +266,27 @@ func (hc *hammerheadController) Webhook(c echo.Context) error {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	user, err := hc.context.UserRepo().GetByID(conn.UserID)
+	user, err := hc.userRepo.GetByID(conn.UserID)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	fitData, err := hc.getActivityFile(c.Request().Context(), &conn, payload.ActivityID)
 	if err != nil {
-		hc.context.Logger().Warn("Hammerhead activity fetch failed", "activity_id", payload.ActivityID, "error", err)
+		hc.logger.Warn("Hammerhead activity fetch failed", "activity_id", payload.ActivityID, "error", err)
 		return c.JSON(http.StatusOK, dto.Response[map[string]string]{
 			Results: map[string]string{"message": "ignored: activity fetch failed"},
 		})
 	}
 
 	user.Profile.User = user
-	workouts, addErr := user.Profile.AddWorkout(hc.context.GetDB(), model.WorkoutTypeAutoDetect, "Imported from Hammerhead", payload.ActivityID+".fit", fitData)
+	workouts, addErr := user.Profile.AddWorkout(hc.db, model.WorkoutTypeAutoDetect, "Imported from Hammerhead", payload.ActivityID+".fit", fitData)
 	if len(addErr) > 0 {
 		allDuplicates := true
 		for _, itemErr := range addErr {
 			if !errors.Is(itemErr, model.ErrWorkoutAlreadyExists) {
 				allDuplicates = false
-				hc.context.Logger().Warn("Hammerhead workout import failed", "error", itemErr)
+				hc.logger.Warn("Hammerhead workout import failed", "error", itemErr)
 			}
 		}
 
@@ -283,8 +298,8 @@ func (hc *hammerheadController) Webhook(c echo.Context) error {
 	}
 
 	for _, workout := range workouts {
-		if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), hc.context, workout.ID); err != nil {
-			hc.context.Logger().Warn("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
+		if err := worker.EnqueueWorkoutUpdate(c.Request().Context(), hc.workerClient, workout.ID); err != nil {
+			hc.logger.Warn("Failed to enqueue workout update", "workout_id", workout.ID, "error", err)
 		}
 	}
 
@@ -294,7 +309,7 @@ func (hc *hammerheadController) Webhook(c echo.Context) error {
 }
 
 func (hc *hammerheadController) exchangeCodeForToken(ctx context.Context, code, redirectURI string) (*hammerheadTokenResponse, error) {
-	cfg := hc.context.GetConfig()
+	cfg := hc.cfg
 	if cfg.HammerheadClientID == "" || cfg.HammerheadSecret == "" {
 		return nil, ErrHammerheadNotConfigured
 	}
@@ -310,7 +325,7 @@ func (hc *hammerheadController) exchangeCodeForToken(ctx context.Context, code, 
 }
 
 func (hc *hammerheadController) refreshToken(ctx context.Context, conn *model.HammerheadConnection) error {
-	cfg := hc.context.GetConfig()
+	cfg := hc.cfg
 	if cfg.HammerheadClientID == "" || cfg.HammerheadSecret == "" {
 		return ErrHammerheadNotConfigured
 	}
@@ -341,7 +356,7 @@ func (hc *hammerheadController) refreshToken(ctx context.Context, conn *model.Ha
 		conn.ExpiresAt = time.Now().Add(6 * time.Hour)
 	}
 
-	return hc.context.GetDB().Save(conn).Error
+	return hc.db.Save(conn).Error
 }
 
 func (hc *hammerheadController) requestToken(ctx context.Context, values url.Values) (*hammerheadTokenResponse, error) {
@@ -351,7 +366,7 @@ func (hc *hammerheadController) requestToken(ctx context.Context, values url.Val
 	}
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 
-	resp, err := hc.client.Do(req)
+	resp, err := hc.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +418,7 @@ func (hc *hammerheadController) fetchActivityFile(ctx context.Context, accessTok
 	}
 	req.Header.Set(echo.HeaderAuthorization, "Bearer "+accessToken)
 
-	resp, err := hc.client.Do(req)
+	resp, err := hc.httpClient.Do(req)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -422,7 +437,7 @@ func (hc *hammerheadController) fetchActivityFile(ctx context.Context, accessTok
 }
 
 func (hc *hammerheadController) deauthorize(ctx context.Context, accessToken string) error {
-	cfg := hc.context.GetConfig()
+	cfg := hc.cfg
 	values := url.Values{}
 	values.Set("client_id", cfg.HammerheadClientID)
 	values.Set("client_secret", cfg.HammerheadSecret)
@@ -434,7 +449,7 @@ func (hc *hammerheadController) deauthorize(ctx context.Context, accessToken str
 	}
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 
-	resp, err := hc.client.Do(req)
+	resp, err := hc.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -448,7 +463,7 @@ func (hc *hammerheadController) deauthorize(ctx context.Context, accessToken str
 }
 
 func (hc *hammerheadController) validWebhookSignature(payload []byte, signature string) bool {
-	secret := hc.context.GetConfig().HammerheadWebhook
+	secret := hc.cfg.HammerheadWebhook
 	if secret == "" {
 		return false
 	}
@@ -476,7 +491,7 @@ func (hc *hammerheadController) validWebhookSignature(payload []byte, signature 
 }
 
 func (hc *hammerheadController) redirectURI(c echo.Context) string {
-	if configured := hc.context.GetConfig().HammerheadRedirect; configured != "" {
+	if configured := hc.cfg.HammerheadRedirect; configured != "" {
 		return configured
 	}
 
@@ -486,13 +501,13 @@ func (hc *hammerheadController) redirectURI(c echo.Context) string {
 		scheme = "https"
 	}
 
-	path := joinWithWebRoot(hc.context.GetConfig().WebRoot, "/api/v2/profile/apps/hammerhead/callback")
+	path := joinWithWebRoot(hc.cfg.WebRoot, "/api/v2/profile/apps/hammerhead/callback")
 
 	return scheme + "://" + host + path
 }
 
 func (hc *hammerheadController) redirectToAppsPage(c echo.Context, status string) error {
-	target := joinWithWebRoot(hc.context.GetConfig().WebRoot, "/profile/settings/apps")
+	target := joinWithWebRoot(hc.cfg.WebRoot, "/profile/settings/apps")
 	if status != "" {
 		target = target + "?hammerhead=" + url.QueryEscape(status)
 	}

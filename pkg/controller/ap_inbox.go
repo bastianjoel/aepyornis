@@ -4,14 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/jsonld"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 type ApInboxController interface {
@@ -19,19 +21,21 @@ type ApInboxController interface {
 }
 
 type apInboxController struct {
-	context              *container.Container
-	inboxActivityHandler *ap.InboxActivityHandler
+	logger               *slog.Logger
+	userRepo             repository.User
+	inboxActivityHandler *aputil.InboxActivityHandler
 }
 
-func NewApInboxController(c *container.Container) ApInboxController {
+func NewApInboxController(injector do.Injector) ApInboxController {
 	return &apInboxController{
-		context: c,
-		inboxActivityHandler: ap.NewInboxActivityHandler(
-			c.FollowerRepo(),
-			c.APOutboxRepo(),
-			c.WorkoutLikeRepo(),
-			c.WorkoutReplyRepo(),
-			c.APStatusRepo(),
+		logger:   do.MustInvoke[*slog.Logger](injector),
+		userRepo: do.MustInvoke[repository.User](injector),
+		inboxActivityHandler: aputil.NewInboxActivityHandler(
+			do.MustInvoke[repository.Follower](injector),
+			do.MustInvoke[repository.APOutbox](injector),
+			do.MustInvoke[repository.WorkoutLike](injector),
+			do.MustInvoke[repository.WorkoutReply](injector),
+			do.MustInvoke[repository.APStatus](injector),
 		),
 	}
 }
@@ -42,7 +46,7 @@ func (ac *apInboxController) targetActivityPubUser(c echo.Context) (*model.User,
 		return nil, errors.New("username not found")
 	}
 
-	user, err := ac.context.UserRepo().GetByUsername(username)
+	user, err := ac.userRepo.GetByUsername(username)
 	if err != nil || !user.ActivityPubEnabled() {
 		return nil, errors.New("resource not found")
 	}
@@ -50,8 +54,8 @@ func (ac *apInboxController) targetActivityPubUser(c echo.Context) (*model.User,
 	return user, nil
 }
 
-func requestingActor(c echo.Context) (*ap.RequestActor, error) {
-	actor, ok := c.Get(ap.RequestingActorContextKey).(*ap.RequestActor)
+func requestingActor(c echo.Context) (*aputil.RequestActor, error) {
+	actor, ok := c.Get(aputil.RequestingActorContextKey).(*aputil.RequestActor)
 	if ok && actor != nil {
 		return actor, nil
 	}
@@ -80,7 +84,7 @@ func (ac *apInboxController) Inbox(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("failed to read request body: %w", err))
 	}
 
-	ac.context.Logger().With("payload", string(payload)).Debug("Received ap inbox request")
+	ac.logger.With("payload", string(payload)).Debug("Received ap inbox request")
 
 	var activity vocab.Activity
 	err = jsonld.Unmarshal(payload, &activity)

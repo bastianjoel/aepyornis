@@ -9,8 +9,10 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/AepyornisNet/aepyornis/pkg/container"
+	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
+	"github.com/samber/do/v2"
 	"github.com/vgarvardt/gue/v6"
 	"gorm.io/gorm"
 )
@@ -48,35 +50,44 @@ type Worker struct {
 	geoPool  *gue.WorkerPool
 	logger   *slog.Logger
 	db       *gorm.DB
-	cfg      *container.Config
+	cfg      *config.Config
 	delay    time.Duration
 }
 
-// New creates a Worker using dependencies from the provided Container.
+// New creates a Worker using dependencies from the provided injector.
 // It migrates the gue_jobs schema and builds the work maps.
-func New(c *container.Container) (*Worker, error) {
-	db := c.GetDB()
-	cfg := c.GetConfig()
-	logger := c.Logger().With("module", "worker")
+func New(injector do.Injector) (*Worker, error) {
+	db := do.MustInvoke[*gorm.DB](injector)
+	cfg := do.MustInvoke[*config.Config](injector)
+	logger := do.MustInvoke[*slog.Logger](injector).With("module", "worker")
 
 	if err := db.Exec(gueJobsSchema).Error; err != nil {
 		return nil, fmt.Errorf("worker: migrating gue_jobs schema: %w", err)
 	}
 
-	gc := c.GetGueClient()
+	gc := do.MustInvoke[*gue.Client](injector)
 	if gc == nil {
-		return nil, errors.New("worker: missing gue client on container")
+		return nil, errors.New("worker: missing gue client")
 	}
 
 	wm := gue.WorkMap{
-		JobUpdateWorkout:      makeUpdateWorkoutHandler(c, logger),
-		JobUpdateRouteSegment: makeUpdateRouteSegmentHandler(c, logger),
-		JobAutoImport:         makeAutoImportHandler(c, logger),
-		JobDeliverActivityPub: makeDeliverActivityPubHandler(c, logger),
+		JobUpdateWorkout: makeUpdateWorkoutHandler(
+			db,
+			cfg,
+			gc,
+			logger,
+			do.MustInvoke[repository.APOutbox](injector),
+			do.MustInvoke[repository.APStatusDelivery](injector),
+			do.MustInvoke[repository.User](injector),
+			do.MustInvoke[repository.Workout](injector),
+		),
+		JobUpdateRouteSegment: makeUpdateRouteSegmentHandler(db, logger, do.MustInvoke[repository.RouteSegment](injector)),
+		JobAutoImport:         makeAutoImportHandler(cfg, db, gc, logger, do.MustInvoke[repository.User](injector)),
+		JobDeliverActivityPub: makeDeliverActivityPubHandler(cfg, logger, do.MustInvoke[repository.APStatusDelivery](injector), do.MustInvoke[repository.User](injector)),
 	}
 
 	geoWM := gue.WorkMap{
-		JobUpdateAddress: makeUpdateAddressHandler(c, logger),
+		JobUpdateAddress: makeUpdateAddressHandler(db, logger),
 	}
 
 	mainPool, err := gue.NewWorkerPool(gc, wm, mainWorkerCount)
@@ -194,16 +205,19 @@ func (w *Worker) enqueueAutoImports(ctx context.Context) {
 }
 
 func (w *Worker) enqueueJob(ctx context.Context, queue, jobType string, args any) {
+	if err := enqueueJob(ctx, w.client, queue, jobType, args); err != nil {
+		w.logger.Error("Failed to enqueue job", "job_type", jobType, "error", err)
+	}
+}
+
+func enqueueJob(ctx context.Context, client *gue.Client, queue, jobType string, args any) error {
 	raw, err := json.Marshal(args)
 	if err != nil {
-		w.logger.Error("Failed to marshal job args", "job_type", jobType, "error", err)
-		return
+		return err
 	}
 
 	j := &gue.Job{Queue: queue, Type: jobType, Args: raw}
-	if err := w.client.Enqueue(ctx, j); err != nil {
-		w.logger.Error("Failed to enqueue job", "job_type", jobType, "error", err)
-	}
+	return client.Enqueue(ctx, j)
 }
 
 // idArgs is the shared JSON payload for all single-entity jobs.

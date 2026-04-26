@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	ap "github.com/AepyornisNet/aepyornis/pkg/activitypub"
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/repository"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/invopop/ctxi18n"
 
 	"github.com/labstack/echo/v4"
+	"github.com/samber/do/v2"
 )
 
 var ErrInvalidJWTToken = errors.New("invalid JWT token")
@@ -58,7 +60,7 @@ func (a *App) setUser(c echo.Context) error {
 		return ErrInvalidJWTToken
 	}
 
-	dbUser, err := a.container.UserRepo().GetByEmail(email)
+	dbUser, err := do.MustInvoke[repository.User](a.injector).GetByEmail(email)
 	if err != nil {
 		return ErrInvalidJWTToken
 	}
@@ -76,14 +78,14 @@ func (a *App) setContextUser(c echo.Context, user *model.User) {
 	c.Set("user_info", user)
 
 	if user.ActivityPubEnabled() {
-		actorURL := ap.LocalActorURL(ap.LocalActorURLConfig{
-			Host:           a.container.GetConfig().Host,
-			WebRoot:        a.container.GetConfig().WebRoot,
+		actorURL := aputil.LocalActorURL(aputil.LocalActorURLConfig{
+			Host:           a.Config.Host,
+			WebRoot:        a.Config.WebRoot,
 			FallbackHost:   c.Request().Host,
 			FallbackScheme: c.Scheme(),
 		}, user.Profile.Username)
 
-		c.Set("user_ap_actor", ap.NewUserActor(actorURL, user.Profile.PrivateKey))
+		c.Set("user_ap_actor", aputil.NewUserActor(actorURL, user.Profile.PrivateKey))
 	}
 }
 
