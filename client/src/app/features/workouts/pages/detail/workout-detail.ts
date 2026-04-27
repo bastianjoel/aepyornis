@@ -29,10 +29,7 @@ import {
   NgbNavLinkButton,
   NgbNavOutlet,
 } from '@ng-bootstrap/ng-bootstrap';
-import {
-  hasWorkoutStatistics,
-  WorkoutStatisticsComponent,
-} from '../../components/workout-statistics/workout-statistics';
+import { WorkoutStatisticsComponent } from '../../components/workout-statistics/workout-statistics';
 import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport-labels';
 import { User } from '../../../../core/services/user';
 import { WorkoutPerformanceCurveComponent } from '../../components/workout-performance-curve/workout-performance-curve';
@@ -73,9 +70,10 @@ export class WorkoutDetailPage implements OnInit {
   // Inject services
   public dataService = inject(WorkoutDetailDataService);
   public coordinatorService = inject(WorkoutDetailCoordinatorService);
-  public readonly hasWorkoutStatisticsTab = computed(() =>
-    hasWorkoutStatistics(this.dataService.workout()),
-  );
+  public readonly hasWorkoutStatisticsTab = computed(() => {
+    const details = this.dataService.workout()?.records?.details;
+    return Boolean(details && details.distance && details.distance.length > 1);
+  });
   public readonly isWorkoutOwner = computed(() => {
     const workout = this.dataService.workout();
     const userInfo = this.userService.getUserInfo()();

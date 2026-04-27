@@ -34,23 +34,7 @@ export class WorkoutDetailDataService {
   });
 
   public readonly workoutRecords = computed<WorkoutRecords | undefined>(() => {
-    const w = this.workout();
-    if (!w) {
-      return undefined;
-    }
-
-    if (w.records) {
-      return w.records;
-    }
-
-    if (!w.map_data) {
-      return undefined;
-    }
-
-    return {
-      extra_metrics: w.map_data.extra_metrics,
-      details: w.map_data.details,
-    };
+    return this.workout()?.records;
   });
 
   public readonly recordsDetails = computed<MapDataDetails | undefined>(

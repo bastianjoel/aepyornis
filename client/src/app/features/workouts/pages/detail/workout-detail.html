@@ -270,9 +270,9 @@
                 <dd class="col-sm-9">{{ dataService.workout()!.address_string }}</dd>
               }
 
-              @if (dataService.workout()!.map_data?.creator) {
+              @if (dataService.workout()!.creator) {
                 <dt class="col-sm-3">{{ 'Source' | translate }}</dt>
-                <dd class="col-sm-9">{{ dataService.workout()!.map_data!.creator }}</dd>
+                <dd class="col-sm-9">{{ dataService.workout()!.creator }}</dd>
               }
 
               @if (dataService.workout()!.locked) {

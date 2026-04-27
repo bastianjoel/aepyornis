@@ -43,7 +43,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   // Computed values
   public readonly totalPoints = computed(() => {
     const w = this.workout();
-    return w?.map_data?.details?.position?.length || 0;
+    return w?.records?.details?.position?.length || 0;
   });
 
   public readonly selectedDistance = computed(() => {
@@ -51,11 +51,11 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
     const startIdx = this.start() - 1;
     const endIdx = this.end() - 1;
 
-    if (!w?.map_data?.details?.distance || startIdx < 0 || endIdx < 0) {
+    if (!w?.records?.details?.distance || startIdx < 0 || endIdx < 0) {
       return 0;
     }
 
-    const distances = w.map_data.details.distance;
+    const distances = w.records?.details.distance;
     if (endIdx >= distances.length || startIdx >= distances.length) {
       return 0;
     }
@@ -66,17 +66,17 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   public readonly workoutPoints = computed(() => {
     const w = this.workout();
     if (
-      !w?.map_data?.details?.position ||
-      !w.map_data.details.elevation ||
-      !w.map_data.details.distance
+      !w?.records?.details?.position ||
+      !w.records.details.elevation ||
+      !w.records.details.distance
     ) {
       return [];
     }
-    return w.map_data.details.position.map((p: [number, number], i: number) => ({
+    return w.records.details.position.map((p: [number, number], i: number) => ({
       lat: p[0],
       lng: p[1],
-      elevation: w.map_data!.details!.elevation![i] ?? 0,
-      total_distance: w.map_data!.details!.distance![i] ?? 0,
+      elevation: w.records!.details!.elevation![i] ?? 0,
+      total_distance: w.records!.details!.distance![i] ?? 0,
     }));
   });
 
@@ -112,7 +112,7 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
         this.name.set(workout.name);
 
         // Set end to the last point
-        const points = workout.map_data?.details?.position?.length || 1;
+        const points = workout.records?.details?.position?.length || 1;
         this.end.set(points);
       }
     } catch (err) {

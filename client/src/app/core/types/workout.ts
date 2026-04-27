@@ -10,6 +10,7 @@ export type Workout = {
   date: string;
   dirty: boolean;
   name: string;
+  creator: string;
   notes: string;
   type: string;
   sub_type?: string;
@@ -72,10 +73,7 @@ export type WorkoutDetail = {
 } & Workout;
 
 export type MapData = {
-  creator: string;
   center: MapCenter;
-  extra_metrics?: string[];
-  details?: MapDataDetails;
 };
 
 export type WorkoutRecords = {

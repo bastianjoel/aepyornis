@@ -160,7 +160,7 @@ export class WorkoutStatisticsComponent {
 
     const units = this.resolveUnits(stats);
     const selection = this.coordinator.selectedInterval();
-    const availableMetrics = workout.map_data?.extra_metrics ?? [];
+    const availableMetrics = workout.records?.extra_metrics ?? [];
 
     const cards: WorkoutStatCard[] = [];
 
@@ -200,7 +200,7 @@ export class WorkoutStatisticsComponent {
     workout: WorkoutDetail | null,
     selection: IntervalSelection | null,
   ): Promise<void> {
-    if (!workout?.id || !workout.map_data?.details?.distance?.length) {
+    if (!workout?.id || !workout.records?.details?.distance?.length) {
       this.stats.set(null);
       this.loading.set(false);
       return;
@@ -321,7 +321,7 @@ export class WorkoutStatisticsComponent {
       return null;
     }
 
-    const times = workout.map_data?.details?.time;
+    const times = workout.records?.details?.time;
     if (!times || times.length === 0) {
       return null;
     }
@@ -549,9 +549,4 @@ export class WorkoutStatisticsComponent {
     }
     return `${secs}s`;
   }
-}
-
-export function hasWorkoutStatistics(workout: WorkoutDetail | null): boolean {
-  const details = workout?.map_data?.details;
-  return Boolean(details && details.distance && details.distance.length > 1);
 }
