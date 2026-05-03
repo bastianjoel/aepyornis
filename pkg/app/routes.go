@@ -228,6 +228,7 @@ func (a *App) apiV2Routes(e *echo.Group) {
 	apiGroup.Use(a.ValidateAuthenticatedUserMiddleware)
 
 	a.registerUserController(apiGroup)
+	a.registerNotificationController(apiGroup)
 	a.registerWorkoutController(apiGroup)
 	a.registerHeatmapController(apiGroup)
 	a.registerRouteSegmentController(apiGroup)
