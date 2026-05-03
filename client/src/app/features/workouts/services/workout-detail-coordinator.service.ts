@@ -17,8 +17,23 @@ export type IntervalSelection = {
   providedIn: 'root',
 })
 export class WorkoutDetailCoordinatorService {
+  // Signal to track the point index the user is hovering in the chart
+  public readonly lastHoveredIdx = signal<number | null>(null);
+
   // Signal to track the currently selected interval across all components
   public readonly selectedInterval = signal<IntervalSelection | null>(null);
+
+  /**
+   * Set the current selected hover index
+   * @param startIndex - The starting index of the interval
+   */
+  public selectHoverIndex(idx: number): void {
+    if (idx === -1) {
+      this.lastHoveredIdx.set(null);
+    } else {
+      this.lastHoveredIdx.set(idx);
+    }
+  }
 
   /**
    * Select an interval range. This will update all subscribed components.

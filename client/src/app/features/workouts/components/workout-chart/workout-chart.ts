@@ -468,6 +468,11 @@ export class WorkoutChartComponent implements AfterViewInit, OnDestroy {
         mode: 'index',
         intersect: false,
       },
+      onHover: (_, item): void => {
+        if (item.length) {
+          this.coordinatorService.selectHoverIndex(item[0].index);
+        }
+      },
       plugins: {
         decimation: {
           enabled: true,

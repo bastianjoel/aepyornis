@@ -125,6 +125,10 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
     effect(() => {
       this.highlightInterval(this.coordinatorService.selectedInterval());
     });
+
+    effect(() => {
+      this.highlightPoint(this.coordinatorService.lastHoveredIdx());
+    });
   }
 
   public onMapLoad(map: Map): void {
@@ -397,6 +401,51 @@ export class WorkoutMapComponent extends BaseMapComponent implements OnDestroy {
         'line-color': 'red',
         'line-width': 5,
         'line-opacity': 0.8,
+      },
+    });
+  }
+
+  private highlightPoint(selection: number | null): void {
+    if (!this.map || !this.mapData()) {
+      return;
+    }
+
+    if (this.map.getLayer('hover-highlight-layer')) {
+      this.map.removeLayer('hover-highlight-layer');
+    }
+    if (this.map.getSource('hover-highlight-source')) {
+      this.map.removeSource('hover-highlight-source');
+    }
+
+    if (selection === null) {
+      return;
+    }
+
+    const p = this.mapData()!.position[selection];
+    this.map.addSource('hover-highlight-source', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [p[1], p[0]] },
+            properties: null,
+          },
+        ],
+      },
+    });
+
+    this.map.addLayer({
+      id: 'hover-highlight-layer',
+      type: 'circle',
+      source: 'hover-highlight-source',
+      paint: {
+        'circle-radius': 5,
+        'circle-opacity': 0,
+        'circle-stroke-opacity': 1,
+        'circle-stroke-color': '#a20000',
+        'circle-stroke-width': 3,
       },
     });
   }
