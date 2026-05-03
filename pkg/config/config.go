@@ -51,6 +51,9 @@ func (c *Config) Load() error {
 	viper.SetDefault("hammerhead_client_secret", "")
 	viper.SetDefault("hammerhead_redirect_uri", "")
 	viper.SetDefault("hammerhead_webhook_secret", "")
+	viper.SetDefault("smtp_sender", "")
+	viper.SetDefault("smtp_host", "")
+	viper.SetDefault("admin_email", "")
 
 	for _, envVar := range []string{
 		"host",
@@ -73,6 +76,9 @@ func (c *Config) Load() error {
 		"hammerhead_client_secret",
 		"hammerhead_redirect_uri",
 		"hammerhead_webhook_secret",
+		"smtp_sender",
+		"smtp_host",
+		"admin_email",
 	} {
 		if err := viper.BindEnv(envVar); err != nil {
 			return err

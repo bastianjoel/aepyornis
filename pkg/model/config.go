@@ -36,6 +36,9 @@ type EnvConfig struct {
 	WorkerDelaySeconds int    `mapstructure:"worker_delay_seconds" gorm:"-"` // Time in seconds between worker runs
 	AutoImportEnabled  bool   `mapstructure:"auto_import_enabled" gorm:"-"`  // Enable auto-import scheduler and profile setting
 	ActivityPubActive  bool   `mapstructure:"activity_pub_active" gorm:"-"`  // Whether the ActivityPub implementation is active
+	SmtpSender         string `mapstructure:"smtp_sender" gorm:"-"`          // Sender email address for notifications
+	SmtpHost           string `mapstructure:"smtp_host" gorm:"-"`            // SMTP host
+	AdminEmail         string `mapstructure:"admin_email" gorm:"-"`          // Email address of the instance owner
 	HammerheadClientID string `mapstructure:"hammerhead_client_id" gorm:"-"` // Hammerhead OAuth client id
 	HammerheadSecret   string `mapstructure:"hammerhead_client_secret" gorm:"-"`
 	HammerheadRedirect string `mapstructure:"hammerhead_redirect_uri" gorm:"-"`

@@ -32,6 +32,7 @@ require (
 	github.com/mattn/go-isatty v0.0.21
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/muktihari/fit v0.27.3
+	github.com/nikoksr/notify v1.5.0
 	github.com/orandin/slog-gorm v1.4.0
 	github.com/paulmach/orb v0.13.0
 	github.com/ringsaturn/tzf v1.0.4
@@ -93,6 +94,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mazznoer/csscolorparser v0.1.8 // indirect
