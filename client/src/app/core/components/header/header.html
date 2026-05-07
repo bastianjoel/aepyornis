@@ -26,6 +26,16 @@
     <div class="ms-auto">
       <div class="d-flex align-items-center gap-3">
         @if (userName()) {
+          <button
+            [attr.aria-label]="'Notifications' | translate"
+            class="btn btn-link link-body-emphasis d-inline-flex align-items-center ms-2"
+            ngbDropdownToggle
+          >
+            <app-icon name="bell" size="18px" />
+          </button>
+
+          <div ngbDropdownMenu></div>
+
           <div class="dropdown" ngbDropdown>
             <button
               class="btn btn-sm btn-link link-body-emphasis d-inline-flex align-items-center header-user-menu"
