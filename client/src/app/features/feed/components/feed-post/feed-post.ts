@@ -73,6 +73,10 @@ export class FeedPost {
     return 'Unknown';
   }
 
+  public getWorkoutAuthorHandle(workout: Workout): string | null {
+    return workout.user?.username?.trim() || null;
+  }
+
   public getAuthorName(reply: WorkoutReply): string {
     const userName = reply.user?.name?.trim();
     if (userName) {
@@ -96,6 +100,14 @@ export class FeedPost {
       return reply.actor_iri;
     }
     return 'Unknown';
+  }
+
+  public getAuthorHandle(reply: WorkoutReply): string | null {
+    if (reply.user?.username) {
+      return reply.user.username.trim();
+    }
+    const parsed = this.parseActorIri(reply.actor_iri);
+    return parsed?.username || null;
   }
 
   public getPublishDate(reply: WorkoutReply): string {
