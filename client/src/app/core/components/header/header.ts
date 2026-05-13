@@ -14,11 +14,19 @@ import { RouterLink } from '@angular/router';
 import { AppIcon } from '../app-icon/app-icon';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AVAILABLE_LANGUAGES, Language } from '../../config/languages';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdown, NgbDropdownMenu, NgbDropdownToggle } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-header',
-  imports: [FormsModule, RouterLink, AppIcon, NgbDropdownModule, TranslatePipe],
+  imports: [
+    FormsModule,
+    RouterLink,
+    AppIcon,
+    NgbDropdown,
+    NgbDropdownMenu,
+    NgbDropdownToggle,
+    TranslatePipe,
+  ],
   templateUrl: './header.html',
   styleUrl: './header.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

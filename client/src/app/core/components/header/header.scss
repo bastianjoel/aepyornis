@@ -9,3 +9,22 @@
 .header-user-menu {
   text-decoration: none;
 }
+
+.notification-dropdown {
+  max-width: 90vw;
+  width: 350px;
+  padding: 0;
+
+  .item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--bs-dropdown-border-color);
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+
+    &.empty {
+      text-align: center;
+    }
+  }
+}
