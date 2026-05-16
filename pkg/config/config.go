@@ -81,7 +81,12 @@ func (c *Config) Load() error {
 		"hammerhead_client_secret",
 		"hammerhead_redirect_uri",
 		"hammerhead_webhook_secret",
-		"smtp_sender",
+		"vapid_public_key",
+		"vapid_private_key",
+		"mailjet_public_key",
+		"mailjet_private_key",
+		"mail_sender_name",
+		"mail_sender_address",
 		"smtp_host",
 		"admin_email",
 	} {

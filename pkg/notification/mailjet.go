@@ -7,8 +7,8 @@ import (
 	"github.com/mailjet/mailjet-apiv3-go/v4"
 )
 
-// Option describes a functional parameter for the Mailgun constructor.
-type Option func(*Mailjet)
+// MailjetOption describes a functional parameter for the Mailgun constructor.
+type MailjetOption func(*Mailjet)
 
 // Mailjet struct holds necessary data to communicate with the Mailjet API.
 type Mailjet struct {
@@ -18,7 +18,7 @@ type Mailjet struct {
 	receiverAddresses []string
 }
 
-func NewMailjet(apiKeyPublic, apiKeyPrivate, senderAddress, senderName string, opts ...Option) *Mailjet {
+func NewMailjet(apiKeyPublic, apiKeyPrivate, senderAddress, senderName string, opts ...MailjetOption) *Mailjet {
 	m := &Mailjet{
 		client:            mailjet.NewMailjetClient(apiKeyPublic, apiKeyPrivate),
 		senderAddress:     senderAddress,
@@ -57,9 +57,9 @@ func (m Mailjet) Send(ctx context.Context, subject, message string) error {
 					Email: m.receiverAddresses[0],
 				},
 			},
-			Subject:  "Your email flight plan!",
-			TextPart: "Dear passenger 1, welcome to Mailjet! May the delivery force be with you!",
-			HTMLPart: "<h3>Dear passenger 1, welcome to <a href=\"https://www.mailjet.com/\">Mailjet</a>!</h3><br />May the delivery force be with you!",
+			Subject:  subject,
+			TextPart: message,
+			// HTMLPart: "",
 		},
 	}
 	messages := mailjet.MessagesV31{Info: messagesInfo}
