@@ -5,7 +5,18 @@
         <div class="d-flex align-items-start gap-2 flex-grow-1">
           <app-avatar [size]="44" [user]="workout.user" />
           <div class="flex-grow-1 min-w-0">
-            <div class="fw-semibold lh-sm">{{ getWorkoutAuthorName(workout) }}</div>
+            <div class="fw-semibold lh-sm">
+              @if (getWorkoutAuthorHandle(workout); as handle) {
+                <a
+                  class="text-decoration-none link-body-emphasis"
+                  [routerLink]="['/profile', handle]"
+                >
+                  {{ getWorkoutAuthorName(workout) }}
+                </a>
+              } @else {
+                {{ getWorkoutAuthorName(workout) }}
+              }
+            </div>
             @if (workout.address_string) {
               <div class="small text-body-secondary text-truncate">
                 {{ workout.address_string }}
@@ -114,7 +125,18 @@
                   />
                   <div class="small">
                     <div class="d-flex align-items-center gap-2">
-                      <span class="fw-semibold text-body">{{ getAuthorName(reply) }}</span>
+                      <span class="fw-semibold text-body">
+                        @if (getAuthorHandle(reply); as handle) {
+                          <a
+                            class="text-decoration-none link-body-emphasis"
+                            [routerLink]="['/profile', handle]"
+                          >
+                            {{ getAuthorName(reply) }}
+                          </a>
+                        } @else {
+                          {{ getAuthorName(reply) }}
+                        }
+                      </span>
                       <span class="text-body-tertiary">{{ getPublishDate(reply) }}</span>
                     </div>
                     <div class="text-body-secondary" [innerHTML]="reply.content"></div>

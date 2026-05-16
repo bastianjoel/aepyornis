@@ -3,7 +3,9 @@ package repository
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
+	"github.com/AepyornisNet/aepyornis/pkg/aputil"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 	"github.com/google/uuid"
 	"github.com/samber/do/v2"
@@ -13,9 +15,9 @@ import (
 type APOutbox interface {
 	CreateWorkout(outboxWorkout *model.APStatusWorkout) error
 	CreateEntry(entry *model.APStatus) error
-	CountEntriesByUser(userID uint64) (int64, error)
-	GetEntriesByUser(userID uint64, limit int, offset int) ([]model.APStatus, error)
-	GetEntryByUUIDAndUser(userID uint64, outboxID uuid.UUID) (*model.APStatus, error)
+	CountEntriesByUser(actor *aputil.RequestActor, userID uint64) (int64, error)
+	GetEntriesByUser(actor *aputil.RequestActor, userID uint64, limit int, offset int) ([]model.APStatus, error)
+	GetEntryByUUIDAndUser(actor *aputil.RequestActor, userID uint64, outboxID uuid.UUID) (*model.APStatus, error)
 	GetEntryForWorkout(userID uint64, workoutID uint64) (*model.APStatus, error)
 	ResolveWorkoutIDByObjectOrActivityID(userID uint64, objectOrActivityID string) (uint64, error)
 	DeleteEntryForWorkout(userID uint64, workoutID uint64) error
@@ -70,9 +72,9 @@ func (r *apOutboxRepository) CreateEntry(entry *model.APStatus) error {
 	return r.db.Create(entry).Error
 }
 
-func (r *apOutboxRepository) CountEntriesByUser(userID uint64) (int64, error) {
+func (r *apOutboxRepository) CountEntriesByUser(actor *aputil.RequestActor, userID uint64) (int64, error) {
 	var total int64
-	if err := r.db.Model(&model.APStatus{}).
+	if err := r.buildVisibilityFilter(actor, userID).Model(&model.APStatus{}).
 		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
 		Where("owner_profiles.user_id = ?", userID).
 		Count(&total).Error; err != nil {
@@ -82,13 +84,13 @@ func (r *apOutboxRepository) CountEntriesByUser(userID uint64) (int64, error) {
 	return total, nil
 }
 
-func (r *apOutboxRepository) GetEntriesByUser(userID uint64, limit int, offset int) ([]model.APStatus, error) {
+func (r *apOutboxRepository) GetEntriesByUser(actor *aputil.RequestActor, userID uint64, limit int, offset int) ([]model.APStatus, error) {
 	entries := make([]model.APStatus, 0)
 	if limit <= 0 {
 		limit = 20
 	}
 
-	err := r.db.
+	err := r.buildVisibilityFilter(actor, userID).
 		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
 		Where("owner_profiles.user_id = ?", userID).
 		Order("published_at DESC").
@@ -101,9 +103,9 @@ func (r *apOutboxRepository) GetEntriesByUser(userID uint64, limit int, offset i
 	return entries, err
 }
 
-func (r *apOutboxRepository) GetEntryByUUIDAndUser(userID uint64, outboxID uuid.UUID) (*model.APStatus, error) {
+func (r *apOutboxRepository) GetEntryByUUIDAndUser(actor *aputil.RequestActor, userID uint64, outboxID uuid.UUID) (*model.APStatus, error) {
 	entry := &model.APStatus{}
-	if err := r.db.
+	if err := r.buildVisibilityFilter(actor, userID).
 		Preload("APStatusWorkout").
 		Joins("JOIN profiles owner_profiles ON owner_profiles.id = ap_statuses.profile_id").
 		Where("owner_profiles.user_id = ? AND public_uuid = ?", userID, outboxID).
@@ -194,4 +196,48 @@ func (r *apOutboxRepository) PublishedMap(userID uint64, workoutIDs []uint64) (m
 	}
 
 	return published, nil
+}
+
+// Helper method to build visibility filter WHERE clause
+func (r *apOutboxRepository) buildVisibilityFilter(actor *aputil.RequestActor, userID uint64) *gorm.DB {
+	// Get the author profile for followers collection URI
+	authorProfile := &model.Profile{}
+	r.db.Where("user_id = ?", userID).First(authorProfile)
+
+	publicURI := "https://www.w3.org/ns/activitystreams#Public"
+
+	// Public posts - visible to everyone
+	publicCondition := r.db.Where(
+		"ap_statuses.activity->'to' @> ? OR ap_statuses.activity->'cc' @> ?",
+		fmt.Sprintf(`"%s"`, publicURI),
+		fmt.Sprintf(`"%s"`, publicURI),
+	)
+
+	// If no actor, only show public
+	if actor == nil || actor.GetID().String() == "" {
+		return publicCondition
+	}
+
+	// Direct recipient - posts addressed to this actor
+	directCondition := r.db.Where(
+		"ap_statuses.activity->'to' @> ? OR ap_statuses.activity->'cc' @> ?",
+		fmt.Sprintf(`"%s"`, actor.GetID().String()),
+		fmt.Sprintf(`"%s"`, actor.GetID().String()),
+	)
+
+	// Followers-only - actor must be a follower
+	// Posts sent to the author's followers collection
+	followersURI := fmt.Sprintf(`"%s/followers"`, authorProfile.ActorURL())
+	followersCondition := r.db.Where(
+		"(ap_statuses.activity->'to' @> ? OR ap_statuses.activity->'cc' @> ?) AND EXISTS (SELECT 1 FROM followers WHERE followers.account_id = ? AND followers.follower_id = ?)",
+		followersURI,
+		followersURI,
+		authorProfile.ID,
+		actor.GetID().String(), // This assumes actor.ActorID can be matched to a follower record
+	)
+
+	// Combine: public OR direct recipient OR (followers AND is follower)
+	return r.db.Where(
+		publicCondition.Or(directCondition).Or(followersCondition),
+	)
 }

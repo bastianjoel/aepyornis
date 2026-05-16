@@ -205,24 +205,6 @@ func (h *InboxActivityHandler) handleUndoLikeActivity(requestingActor *vocab.Act
 	return h.workoutLikeRepo.UnlikeByActorIRI(workoutID, requestingActor.ID.String())
 }
 
-func actorInboxIRI(actor *vocab.Actor) string {
-	if actor == nil || vocab.IsNil(actor.Inbox) {
-		return ""
-	}
-
-	if vocab.IsIRI(actor.Inbox) {
-		return actor.Inbox.GetLink().String()
-	}
-
-	iri := ""
-	_ = vocab.OnLink(actor.Inbox, func(link *vocab.Link) error {
-		iri = link.Href.String()
-		return nil
-	})
-
-	return iri
-}
-
 func actorIRIFromItem(item vocab.Item) string {
 	if vocab.IsNil(item) {
 		return ""
@@ -266,44 +248,6 @@ func extractFollowLifecycleTarget(it *vocab.Activity) string {
 	})
 
 	return targetIRI
-}
-
-func isUndoFollowActivity(it *vocab.Activity) bool {
-	if it == nil || !vocab.UndoType.Match(it.GetType()) {
-		return false
-	}
-
-	isFollow := false
-	if err := vocab.OnActivity(it.Object, func(object *vocab.Activity) error {
-		if vocab.FollowType.Match(object.GetType()) {
-			isFollow = true
-		}
-
-		return nil
-	}); err != nil {
-		return false
-	}
-
-	return isFollow
-}
-
-func isUndoLikeActivity(it *vocab.Activity) bool {
-	if it == nil || !vocab.UndoType.Match(it.GetType()) {
-		return false
-	}
-
-	isLike := false
-	if err := vocab.OnActivity(it.Object, func(object *vocab.Activity) error {
-		if vocab.LikeType.Match(object.GetType()) {
-			isLike = true
-		}
-
-		return nil
-	}); err != nil {
-		return false
-	}
-
-	return isLike
 }
 
 func activityObjectIRI(it *vocab.Activity) string {
