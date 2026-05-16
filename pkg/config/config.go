@@ -51,7 +51,12 @@ func (c *Config) Load() error {
 	viper.SetDefault("hammerhead_client_secret", "")
 	viper.SetDefault("hammerhead_redirect_uri", "")
 	viper.SetDefault("hammerhead_webhook_secret", "")
-	viper.SetDefault("smtp_sender", "")
+	viper.SetDefault("vapid_public_key", "")
+	viper.SetDefault("vapid_private_key", "")
+	viper.SetDefault("mailjet_public_key", "")
+	viper.SetDefault("mailjet_private_key", "")
+	viper.SetDefault("mail_sender_name", "")
+	viper.SetDefault("mail_sender_address", "")
 	viper.SetDefault("smtp_host", "")
 	viper.SetDefault("admin_email", "")
 

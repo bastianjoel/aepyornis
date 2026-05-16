@@ -6,6 +6,7 @@ import (
 
 	"github.com/AepyornisNet/aepyornis/pkg/config"
 	"github.com/AepyornisNet/aepyornis/pkg/model"
+	"github.com/AepyornisNet/aepyornis/pkg/notification"
 	"github.com/nikoksr/notify"
 	"github.com/nikoksr/notify/service/mail"
 	"github.com/samber/do/v2"
@@ -26,7 +27,7 @@ type BaseNotification interface {
 
 type NotificationService interface {
 	SendRaw(ctx context.Context, user *model.User, subject string, message string) error
-	Send(ctx context.Context, user *model.User, notification BaseNotification) error
+	Send(ctx context.Context, user *model.User, nfy BaseNotification) error
 }
 
 type notificationService struct {
@@ -37,30 +38,26 @@ type notificationService struct {
 func NewNotificationService(injector do.Injector) (NotificationService, error) {
 	return &notificationService{
 		cfg: do.MustInvoke[*config.Config](injector),
-		db:  do.MustInvoke[*gorm.DB](injector)}, nil
+		db:  do.MustInvoke[*gorm.DB](injector),
+	}, nil
 }
 
 func (s *notificationService) SendRaw(ctx context.Context, user *model.User, subject string, message string) error {
-	notification := model.Notification{
+	nfy := model.Notification{
 		UserID:  user.ID,
 		Type:    "raw",
 		Subject: subject,
 		Msg:     message,
 	}
 
-	err := gorm.G[model.Notification](s.db).Create(ctx, &notification)
+	err := gorm.G[model.Notification](s.db).Create(ctx, &nfy)
 	if err != nil {
 		return fmt.Errorf("could not save notification: %w", err)
 	}
 
-	if s.cfg.SmtpHost != "" && s.cfg.SmtpSender != "" {
-		mailService := mail.New(s.cfg.SmtpSender, s.cfg.SmtpHost)
-		mailService.AddReceivers(user.Email)
-
-		n := notify.NewWithServices(mailService)
-		if err := n.Send(ctx, subject, message); err != nil {
-			return err
-		}
+	n := notify.NewWithServices(s.getEmailService(user.Email)...)
+	if err := n.Send(ctx, subject, message); err != nil {
+		return err
 	}
 
 	return nil
@@ -68,7 +65,7 @@ func (s *notificationService) SendRaw(ctx context.Context, user *model.User, sub
 
 func (s *notificationService) Send(ctx context.Context, user *model.User, in BaseNotification) error {
 	if in.AllowDB() {
-		notification := model.Notification{
+		nfy := model.Notification{
 			UserID:  user.ID,
 			Type:    in.GetType(),
 			Subject: in.GetSubject(),
@@ -76,7 +73,7 @@ func (s *notificationService) Send(ctx context.Context, user *model.User, in Bas
 			Meta:    in.GetMeta(),
 		}
 
-		err := gorm.G[model.Notification](s.db).Create(ctx, &notification)
+		err := gorm.G[model.Notification](s.db).Create(ctx, &nfy)
 		if err != nil {
 			return fmt.Errorf("could not save notification: %w", err)
 		}
@@ -84,16 +81,12 @@ func (s *notificationService) Send(ctx context.Context, user *model.User, in Bas
 
 	services := []notify.Notifier{}
 	if in.AllowEmail() {
-		if s.cfg.SmtpHost != "" && s.cfg.SmtpSender != "" {
-			mailService := mail.New(s.cfg.SmtpSender, s.cfg.SmtpHost)
-			mailService.AddReceivers(user.Email)
-			services = append(services, mailService)
-		}
+		services = append(services, s.getEmailService(user.Email)...)
 	}
 
-	if in.AllowWebpush() {
-		// TODO: Add webpush config
-	}
+	// TODO: Add webpush config
+	// if in.AllowWebpush() {
+	// }
 
 	if len(services) > 0 {
 		n := notify.NewWithServices(services...)
@@ -103,4 +96,20 @@ func (s *notificationService) Send(ctx context.Context, user *model.User, in Bas
 	}
 
 	return nil
+}
+
+func (s *notificationService) getEmailService(receiver string) []notify.Notifier {
+	services := []notify.Notifier{}
+
+	if s.cfg.SmtpHost != "" && s.cfg.MailSenderAddress != "" {
+		mailService := mail.New(s.cfg.MailSenderAddress, s.cfg.SmtpHost)
+		mailService.AddReceivers(receiver)
+		services = append(services, mailService)
+	} else if s.cfg.MailjetPublicKey != "" && s.cfg.MailjetPrivateKey != "" {
+		mailService := notification.NewMailjet(s.cfg.MailjetPublicKey, s.cfg.MailjetPrivateKey, s.cfg.MailSenderAddress, s.cfg.MailSenderName)
+		mailService.AddReceivers(receiver)
+		services = append(services, mailService)
+	}
+
+	return services
 }
