@@ -19,9 +19,9 @@ const thresholdSlowQueries = 100 * time.Millisecond
 var ErrUnsuportedDriver = errors.New("unsupported driver")
 
 type Model struct {
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	ID        uint64 `gorm:"primaryKey"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"update_at"`
+	ID        uint64    `gorm:"primaryKey" json:"id"`
 }
 
 func Connect(driver, dsn string, debug bool, logger *slog.Logger) (*gorm.DB, error) {

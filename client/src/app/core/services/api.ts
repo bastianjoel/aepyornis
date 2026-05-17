@@ -39,6 +39,7 @@ import {
   StatisticsParams,
 } from '../../core/types/statistics';
 import { RegisterRequest, SignInRequest } from '../../core/types/auth';
+import { Notification } from '../types/notification';
 
 @Injectable({
   providedIn: 'root',
@@ -66,6 +67,21 @@ export class Api {
 
   public whoami(): Observable<APIResponse<UserProfile>> {
     return this.http.get<APIResponse<UserProfile>>(`${this.baseUrl}/whoami`);
+  }
+
+  public getNotifications(
+    params?: PaginationParams,
+  ): Observable<PaginatedAPIResponse<Notification>> {
+    let httpParams = new HttpParams();
+    if (params?.page) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params?.per_page) {
+      httpParams = httpParams.set('per_page', params.per_page.toString());
+    }
+    return this.http.get<PaginatedAPIResponse<Notification>>(`${this.baseUrl}/notifications`, {
+      params: httpParams,
+    });
   }
 
   public getAppInfo(): Observable<APIResponse<AppInfo>> {

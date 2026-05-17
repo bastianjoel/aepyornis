@@ -1,6 +1,7 @@
 package notification
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"gorm.io/datatypes"
@@ -30,7 +31,17 @@ func (r *followRequest) GetMessage() string {
 }
 
 func (*followRequest) GetMeta() *datatypes.JSON {
-	return nil
+	meta := map[string]string{
+		"url": "/profile/settings/followers",
+	}
+
+	data, err := json.Marshal(meta)
+	if err != nil {
+		return nil
+	}
+
+	jsonData := datatypes.JSON(data)
+	return &jsonData
 }
 
 func (*followRequest) AllowDB() bool {

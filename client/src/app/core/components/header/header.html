@@ -26,7 +26,13 @@
     <div class="ms-auto">
       <div class="d-flex align-items-center gap-3">
         @if (userName()) {
-          <div #notificationDrop="ngbDropdown" class="dropdown" display="dynamic" ngbDropdown>
+          <div
+            #notificationDrop="ngbDropdown"
+            class="dropdown"
+            display="dynamic"
+            ngbDropdown
+            (openChange)="openNotifications($event)"
+          >
             <button
               class="btn btn-link link-body-emphasis d-inline-flex align-items-center ms-2"
               ngbDropdownToggle

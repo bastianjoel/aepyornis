@@ -15,6 +15,7 @@ import { AppIcon } from '../app-icon/app-icon';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AVAILABLE_LANGUAGES, Language } from '../../config/languages';
 import { NgbDropdown, NgbDropdownMenu, NgbDropdownToggle } from '@ng-bootstrap/ng-bootstrap';
+import { Api } from '../../services/api';
 
 @Component({
   selector: 'app-header',
@@ -34,6 +35,7 @@ import { NgbDropdown, NgbDropdownMenu, NgbDropdownToggle } from '@ng-bootstrap/n
 export class Header {
   private localeId = inject(LOCALE_ID);
   private translate = inject(TranslateService);
+  private api = inject(Api);
 
   // Input for user info and logout handler
   public readonly userName = input<string>();
@@ -67,5 +69,15 @@ export class Header {
 
   public onToggleSidebar(): void {
     this.toggleSidebar.emit();
+  }
+
+  public openNotifications(open: boolean): void {
+    if (!open) {
+      return;
+    }
+
+    this.api.getNotifications().subscribe((resp) => {
+      console.log(resp);
+    });
   }
 }
