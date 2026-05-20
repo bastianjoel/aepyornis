@@ -46,7 +46,7 @@ function parseYaml(content) {
 }
 
 // Read the YAML file
-const yamlPath = path.join(__dirname, '..', 'workout-types.yaml');
+const yamlPath = path.join(__dirname, '..', '..', 'workout-types.yaml');
 const yamlContent = fs.readFileSync(yamlPath, 'utf8');
 const workoutTypes = parseYaml(yamlContent);
 
@@ -68,7 +68,7 @@ export interface WorkoutTypeConfig {
 }
 
 export const WORKOUT_TYPES: WorkoutTypeConfig[] = [
-${workoutTypes.map(wt => `  { value: '${wt.name}', location: ${wt.location}, distance: ${wt.distance}, repetition: ${wt.repetition}, weight: ${wt.weight}, duration: true, pace: ${wt.pace} }`).join(',\n')}
+${workoutTypes.map((wt) => `  { value: '${wt.name}', location: ${wt.location}, distance: ${wt.distance}, repetition: ${wt.repetition}, weight: ${wt.weight}, duration: true, pace: ${wt.pace} }`).join(',\n')}
 ];
 
 export function getWorkoutTypeConfig(type: string): WorkoutTypeConfig | undefined {
@@ -77,7 +77,7 @@ export function getWorkoutTypeConfig(type: string): WorkoutTypeConfig | undefine
 `;
 
 // Write the TypeScript file
-const outputPath = path.join(__dirname, '..', 'client', 'src', 'app', 'core', 'types', 'workout-types.ts');
+const outputPath = path.join(__dirname, '..', 'src', 'app', 'core', 'types', 'workout-types.ts');
 fs.writeFileSync(outputPath, tsCode, 'utf8');
 
 console.log('Generated workout-types.ts successfully');

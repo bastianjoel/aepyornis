@@ -2,12 +2,34 @@
 # This file defines all available workout types and their field requirements
 
 workout_types:
-  - name: running
+  generic:
+    name: "Generic Activity"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  running:
+    name: "Running"
     location: true
     distance: true
     repetition: false
     weight: false
     pace: true
+    sub_types:
+      treadmill:
+        name: "Treadmill"
+        overwrite:
+          location: false
+      street:
+        name: "Street"
+      trail:
+        name: "Trail"
+      track:
+        name: "Track"
+      indoor_running:
+        name: "Indoor Running"
     distance_targets:
       - label: "400 m"
         distance: 400
@@ -35,12 +57,46 @@ workout_types:
         distance: 30000
       - label: "Marathon"
         distance: 42195
-    
-  - name: cycling
+
+  cycling:
+    name: "Cycling"
     location: true
     distance: true
     repetition: false
     weight: false
+    sub_types:
+      spin:
+        name: "Spin"
+      indoor_cycling:
+        name: "Indoor Cycling"
+      road:
+        name: "Road"
+      mountain:
+        name: "Mountain"
+      downhill:
+        name: "Downhill"
+      recumbent:
+        name: "Recumbent"
+      cyclocross:
+        name: "Cyclocross"
+      hand_cycling:
+        name: "Hand Cycling"
+      track_cycling:
+        name: "Track Cycling"
+      bmx:
+        name: "BMX"
+      gravel_cycling:
+        name: "Gravel Cycling"
+      e_bike_mountain:
+        name: "E-Bike Mountain"
+      commuting:
+        name: "Commuting"
+      mixed_surface:
+        name: "Mixed Surface"
+      enduro:
+        name: "Enduro"
+      e_bike_enduro:
+        name: "E-Bike Enduro"
     distance_targets:
       - label: "5 mi"
         distance: 8046.72
@@ -70,106 +126,847 @@ workout_types:
         distance: 160934.4
       - label: "180 km"
         distance: 180000
-    
-  - name: e-cycling
+
+  transition:
+    name: "Multisport Transition"
     location: true
-    distance: true
-    repetition: false
-    weight: false
-    distance_targets:
-      - label: "5 mi"
-        distance: 8046.72
-      - label: "10 km"
-        distance: 10000
-      - label: "10 mi"
-        distance: 16093.44
-      - label: "20 km"
-        distance: 20000
-      - label: "50 km"
-        distance: 50000
-      - label: "50 mi"
-        distance: 80467.2
-      - label: "75 km"
-        distance: 75000
-      - label: "100 km"
-        distance: 100000
-      - label: "100 mi"
-        distance: 160934.4
-    
-  - name: horse-riding
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: inline-skating
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: walking
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: skiing
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: snowboarding
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: swimming
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: kayaking
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: rowing
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: golfing
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: hiking
-    location: true
-    distance: true
-    repetition: false
-    weight: false
-    
-  - name: push-ups
-    location: false
     distance: false
-    repetition: true
+    repetition: false
     weight: false
-    
-  - name: weight-lifting
+    sub_types:
+      bike_to_run_transition:
+        name: "Bike to Run Transition"
+      run_to_bike_transition:
+        name: "Run to Bike Transition"
+      swim_to_bike_transition:
+        name: "Swim to Bike Transition"
+
+  fitness_equipment:
+    name: "Fitness Equipment"
     location: false
     distance: false
     repetition: true
     weight: true
-    
-  - name: other
+    sub_types:
+      indoor_rowing:
+        name: "Indoor Rowing"
+      elliptical:
+        name: "Elliptical"
+      stair_climbing:
+        name: "Stair Climbing"
+      indoor_skiing:
+        name: "Indoor Skiing"
+      pilates:
+        name: "Pilates"
+      indoor_grinding:
+        name: "Indoor Grinding"
+
+  swimming:
+    name: "Swimming"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      lap_swimming:
+        name: "Lap Swimming"
+      open_water:
+        name: "Open Water"
+      pool_apnea:
+        name: "Pool Apnea"
+      dynamic_apnea:
+        name: "Dynamic Apnea"
+
+  basketball:
+    name: "Basketball"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  soccer:
+    name: "Soccer"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  tennis:
+    name: "Tennis"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types:
+      warm_up:
+        name: "Warm Up"
+      match:
+        name: "Match"
+      exercise:
+        name: "Exercise"
+      challenge:
+        name: "Challenge"
+      platform:
+        name: "Platform"
+
+  american_football:
+    name: "American Football"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  training:
+    name: "Training"
+    location: false
+    distance: false
+    repetition: true
+    weight: true
+    sub_types:
+      flexibility_training:
+        name: "Flexibility Training"
+      strength_training:
+        name: "Strength Training"
+      cardio_training:
+        name: "Cardio Training"
+      yoga:
+        name: "Yoga"
+      breathing:
+        name: "Breathing"
+      mobility:
+        name: "Mobility"
+
+  walking:
+    name: "Walking"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      indoor_walking:
+        name: "Indoor Walking"
+      casual_walking:
+        name: "Casual Walking"
+      speed_walking:
+        name: "Speed Walking"
+      indoor_wheelchair_walk:
+        name: "Indoor Wheelchair Walk"
+
+  cross_country_skiing:
+    name: "Cross Country Skiing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      skate_skiing:
+        name: "Skate Skiing"
+
+  alpine_skiing:
+    name: "Alpine Skiing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      backcountry:
+        name: "Backcountry"
+      resort:
+        name: "Resort"
+
+  snowboarding:
+    name: "Snowboarding"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      backcountry:
+        name: "Backcountry"
+      resort:
+        name: "Resort"
+
+  rowing:
+    name: "Rowing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  mountaineering:
+    name: "Mountaineering"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  hiking:
+    name: "Hiking"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      rucking:
+        name: "Rucking"
+
+  multisport:
+    name: "Multisport"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      triathlon:
+        name: "Triathlon"
+      duathlon:
+        name: "Duathlon"
+      brick:
+        name: "Brick"
+      swim_run:
+        name: "Swim Run"
+      adventure_race:
+        name: "Adventure Race"
+      pool_triathlon:
+        name: "Pool Triathlon"
+
+  paddling:
+    name: "Paddling"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  flying:
+    name: "Flying"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      rc_drone:
+        name: "RC Drone"
+      wingsuit:
+        name: "Wingsuit"
+      fly_canopy:
+        name: "Fly Canopy"
+      fly_paraglide:
+        name: "Fly Paraglide"
+      fly_paramotor:
+        name: "Fly Paramotor"
+      fly_pressurized:
+        name: "Fly Pressurized"
+      fly_navigate:
+        name: "Fly Navigate"
+      fly_timer:
+        name: "Fly Timer"
+      fly_altimeter:
+        name: "Fly Altimeter"
+      fly_wx:
+        name: "Fly WX"
+      fly_vfr:
+        name: "Fly VFR"
+      fly_ifr:
+        name: "Fly IFR"
+
+  e_biking:
+    name: "E-Biking"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      e_bike_fitness:
+        name: "E-Bike Fitness"
+
+  motorcycling:
+    name: "Motorcycling"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      atv:
+        name: "ATV"
+      motocross:
+        name: "Motocross"
+
+  boating:
+    name: "Boating"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  driving:
+    name: "Driving"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  golf:
+    name: "Golf"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  hang_gliding:
+    name: "Hang Gliding"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  horseback_riding:
+    name: "Horseback Riding"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  hunting:
+    name: "Hunting"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      hunting_with_dogs:
+        name: "Hunting With Dogs"
+
+  fishing:
+    name: "Fishing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  inline_skating:
+    name: "Inline Skating"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  rock_climbing:
+    name: "Rock Climbing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      indoor_climbing:
+        name: "Indoor Climbing"
+      bouldering:
+        name: "Bouldering"
+
+  sailing:
+    name: "Sailing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      sail_race:
+        name: "Sail Race"
+      indoor_grinding:
+        name: "Indoor Grinding"
+
+  ice_skating:
+    name: "Ice Skating"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  sky_diving:
+    name: "Sky Diving"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  snowshoeing:
+    name: "Snowshoeing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  snowmobiling:
+    name: "Snowmobiling"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  stand_up_paddleboarding:
+    name: "Stand Up Paddleboarding"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  surfing:
+    name: "Surfing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  wakeboarding:
+    name: "Wakeboarding"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  water_skiing:
+    name: "Water Skiing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  kayaking:
+    name: "Kayaking"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      whitewater:
+        name: "Whitewater"
+
+  rafting:
+    name: "Rafting"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      whitewater:
+        name: "Whitewater"
+
+  windsurfing:
+    name: "Windsurfing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  kitesurfing:
+    name: "Kitesurfing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  tactical:
+    name: "Tactical"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  jumpmaster:
+    name: "Jumpmaster"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  boxing:
+    name: "Boxing"
+    location: true
+    distance: false
+    repetition: true
+    weight: false
+    sub_types: {}
+
+  floor_climbing:
+    name: "Floor Climbing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  baseball:
+    name: "Baseball"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  diving:
+    name: "Diving"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      single_gas_diving:
+        name: "Single Gas Diving"
+      multi_gas_diving:
+        name: "Multi Gas Diving"
+      gauge_diving:
+        name: "Gauge Diving"
+      apnea_diving:
+        name: "Apnea Diving"
+      apnea_hunting:
+        name: "Apnea Hunting"
+      ccr_diving:
+        name: "CCR Diving"
+
+  shooting:
+    name: "Sport Shooting"
+    location: true
+    distance: true
+    repetition: true
+    weight: false
+    sub_types: {}
+
+  winter_sport:
+    name: "Winter Sport"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  grinding:
+    name: "Grinding"
+    location: true
+    distance: false
+    repetition: true
+    weight: false
+    sub_types: {}
+
+  hiit:
+    name: "HIIT"
+    location: false
+    distance: false
+    repetition: true
+    weight: true
+    sub_types:
+      hiit_generic:
+        name: "High Intensity Interval Training"
+      amrap:
+        name: "AMRAP"
+      emom:
+        name: "EMOM"
+      tabata:
+        name: "Tabata"
+
+  video_gaming:
+    name: "Video Gaming"
+    location: false
+    distance: false
+    repetition: false
+    weight: false
+    sub_types:
+      esport:
+        name: "Esport"
+
+  racket:
+    name: "Racket Sport"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types:
+      pickleball:
+        name: "Pickleball"
+      padel:
+        name: "Padel"
+      squash:
+        name: "Squash"
+      badminton:
+        name: "Badminton"
+      racquetball:
+        name: "Racquetball"
+      table_tennis:
+        name: "Table Tennis"
+
+  wheelchair_push_walk:
+    name: "Wheelchair Push Walk"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  wheelchair_push_run:
+    name: "Wheelchair Push Run"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  meditation:
+    name: "Meditation"
+    location: false
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  para_sport:
+    name: "Para Sport"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  disc_golf:
+    name: "Disc Golf"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  team_sport:
+    name: "Team Sport"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  cricket:
+    name: "Cricket"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  rugby:
+    name: "Rugby"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  hockey:
+    name: "Hockey"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types:
+      field:
+        name: "Field"
+      ice:
+        name: "Ice"
+
+  lacrosse:
+    name: "Lacrosse"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  volleyball:
+    name: "Volleyball"
+    location: true
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  water_tubing:
+    name: "Water Tubing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  wakesurfing:
+    name: "Wakesurfing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  water_sport:
+    name: "Water Sport"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  archery:
+    name: "Archery"
+    location: true
+    distance: true
+    repetition: true
+    weight: false
+    sub_types: {}
+
+  mixed_martial_arts:
+    name: "Mixed Martial Arts"
+    location: true
+    distance: false
+    repetition: true
+    weight: false
+    sub_types: {}
+
+  motor_sports:
+    name: "Motor Sports"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types:
+      rally:
+        name: "Rally"
+
+  snorkeling:
+    name: "Snorkeling"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  dance:
+    name: "Dance"
+    location: false
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  jump_rope:
+    name: "Jump Rope"
+    location: false
+    distance: false
+    repetition: true
+    weight: false
+    sub_types: {}
+
+  mobility:
+    name: "Mobility"
+    location: false
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  geocaching:
+    name: "Geocaching"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  canoeing:
+    name: "Canoeing"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  indoor_hand_cycling:
+    name: "Indoor Hand Cycling"
+    location: false
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  overland:
+    name: "Overland"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  trolling_motor:
+    name: "Trolling Motor"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  obstacle:
+    name: "Obstacle Course"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  virtual_activity:
+    name: "Virtual Activity"
+    location: false
+    distance: false
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  expedition:
+    name: "Expedition"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  ultra:
+    name: "Ultramarathon"
+    location: true
+    distance: true
+    repetition: false
+    weight: false
+    sub_types: {}
+
+  all:
+    name: "All Sports"
     location: true
     distance: true
     repetition: true
     weight: true
+    sub_types: {}
