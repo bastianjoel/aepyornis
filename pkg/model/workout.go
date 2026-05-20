@@ -374,35 +374,26 @@ func (w *Workout) SetContent(filename string, content []byte) {
 
 func WorkoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	switch strings.ToLower(gpxType) {
-	case "running", "run":
+	case "run":
 		return WorkoutTypeRunning, true
-	case "walking", "walk":
+	case "walk":
 		return WorkoutTypeWalking, true
-	case "cycling", "cycle":
+	case "cycle":
 		return WorkoutTypeCycling, true
-	case "snowboarding":
-		return WorkoutTypeSnowboarding, true
-	case "horse-riding", "horseback-riding":
+	case "horse-riding":
 		return WorkoutTypeHorsebackRiding, true
-	case "inline-skating", "skating", "skate":
+	case "skating", "skate":
 		return WorkoutTypeInlineSkating, true
 	case "skiing":
 		return WorkoutTypeAlpineSkiing, true
-	case "swimming":
-		return WorkoutTypeSwimming, true
-	case "kayaking":
-		return WorkoutTypeKayaking, true
 	case "golfing":
 		return WorkoutTypeGolf, true
-	case "hiking":
-		return WorkoutTypeHiking, true
 	case "push-ups":
 		return WorkoutTypeTraining, true
-	case "rowing":
-		return WorkoutTypeRowing, true
 	}
 
-	wType, found := ParseWorkoutType(gpxType)
+	snakeCaseType := strings.ReplaceAll(gpxType, "-", "_")
+	wType, found := ParseWorkoutType(snakeCaseType)
 	if !found {
 		wType = WorkoutTypeAutoDetect
 	}
