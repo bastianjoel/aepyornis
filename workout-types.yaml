@@ -384,6 +384,35 @@ workout_types:
     sub_types:
       e_bike_fitness:
         name: "E-Bike Fitness"
+    distance_targets:
+      - label: "5 mi"
+        distance: 8046.72
+      - label: "10 km"
+        distance: 10000
+      - label: "10 mi"
+        distance: 16093.44
+      - label: "20 km"
+        distance: 20000
+      - label: "30 km"
+        distance: 30000
+      - label: "40 km"
+        distance: 40000
+      - label: "50 km"
+        distance: 50000
+      - label: "80 km"
+        distance: 80000
+      - label: "50 mi"
+        distance: 80467.2
+      - label: "75 km"
+        distance: 75000
+      - label: "90 km"
+        distance: 90000
+      - label: "100 km"
+        distance: 100000
+      - label: "100 mi"
+        distance: 160934.4
+      - label: "180 km"
+        distance: 180000
 
   motorcycling:
     name: "Motorcycling"

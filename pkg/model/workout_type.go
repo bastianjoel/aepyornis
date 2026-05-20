@@ -2,39 +2,183 @@
 package model
 
 const (
-	WorkoutTypeRunning WorkoutType = "running"
 	WorkoutTypeCycling WorkoutType = "cycling"
-	WorkoutTypeECycling WorkoutType = "e-cycling"
-	WorkoutTypeHorseRiding WorkoutType = "horse-riding"
-	WorkoutTypeInlineSkating WorkoutType = "inline-skating"
-	WorkoutTypeWalking WorkoutType = "walking"
-	WorkoutTypeSkiing WorkoutType = "skiing"
-	WorkoutTypeSnowboarding WorkoutType = "snowboarding"
-	WorkoutTypeSwimming WorkoutType = "swimming"
+	WorkoutTypeKitesurfing WorkoutType = "kitesurfing"
+	WorkoutTypeTraining WorkoutType = "training"
+	WorkoutTypeMultisport WorkoutType = "multisport"
+	WorkoutTypeGolf WorkoutType = "golf"
 	WorkoutTypeKayaking WorkoutType = "kayaking"
-	WorkoutTypeRowing WorkoutType = "rowing"
-	WorkoutTypeGolfing WorkoutType = "golfing"
+	WorkoutTypeOverland WorkoutType = "overland"
+	WorkoutTypeExpedition WorkoutType = "expedition"
+	WorkoutTypeAll WorkoutType = "all"
+	WorkoutTypeCrossCountrySkiing WorkoutType = "cross_country_skiing"
+	WorkoutTypeWakeboarding WorkoutType = "wakeboarding"
+	WorkoutTypeWaterSkiing WorkoutType = "water_skiing"
+	WorkoutTypeHockey WorkoutType = "hockey"
+	WorkoutTypeMixedMartialArts WorkoutType = "mixed_martial_arts"
+	WorkoutTypeSnorkeling WorkoutType = "snorkeling"
+	WorkoutTypeEBiking WorkoutType = "e_biking"
+	WorkoutTypeInlineSkating WorkoutType = "inline_skating"
+	WorkoutTypeSurfing WorkoutType = "surfing"
+	WorkoutTypeUltra WorkoutType = "ultra"
+	WorkoutTypeBasketball WorkoutType = "basketball"
 	WorkoutTypeHiking WorkoutType = "hiking"
-	WorkoutTypePushups WorkoutType = "push-ups"
-	WorkoutTypeWeightLifting WorkoutType = "weight-lifting"
-	WorkoutTypeOther WorkoutType = "other"
+	WorkoutTypeStandUpPaddleboarding WorkoutType = "stand_up_paddleboarding"
+	WorkoutTypeDiscGolf WorkoutType = "disc_golf"
+	WorkoutTypeWaterTubing WorkoutType = "water_tubing"
+	WorkoutTypeWaterSport WorkoutType = "water_sport"
+	WorkoutTypeDiving WorkoutType = "diving"
+	WorkoutTypeHiit WorkoutType = "hiit"
+	WorkoutTypeRacket WorkoutType = "racket"
+	WorkoutTypeRugby WorkoutType = "rugby"
+	WorkoutTypeMobility WorkoutType = "mobility"
+	WorkoutTypeBoxing WorkoutType = "boxing"
+	WorkoutTypeAmericanFootball WorkoutType = "american_football"
+	WorkoutTypeAlpineSkiing WorkoutType = "alpine_skiing"
+	WorkoutTypePaddling WorkoutType = "paddling"
+	WorkoutTypeDriving WorkoutType = "driving"
+	WorkoutTypeHangGliding WorkoutType = "hang_gliding"
+	WorkoutTypeRockClimbing WorkoutType = "rock_climbing"
+	WorkoutTypeSailing WorkoutType = "sailing"
+	WorkoutTypeSoccer WorkoutType = "soccer"
+	WorkoutTypeGrinding WorkoutType = "grinding"
+	WorkoutTypeIceSkating WorkoutType = "ice_skating"
+	WorkoutTypeRafting WorkoutType = "rafting"
+	WorkoutTypeTeamSport WorkoutType = "team_sport"
+	WorkoutTypeArchery WorkoutType = "archery"
+	WorkoutTypeGeocaching WorkoutType = "geocaching"
+	WorkoutTypeTrollingMotor WorkoutType = "trolling_motor"
+	WorkoutTypeRowing WorkoutType = "rowing"
+	WorkoutTypeJumpmaster WorkoutType = "jumpmaster"
+	WorkoutTypeFitnessEquipment WorkoutType = "fitness_equipment"
+	WorkoutTypeSnowmobiling WorkoutType = "snowmobiling"
+	WorkoutTypeJumpRope WorkoutType = "jump_rope"
+	WorkoutTypeCanoeing WorkoutType = "canoeing"
+	WorkoutTypeGeneric WorkoutType = "generic"
+	WorkoutTypeWalking WorkoutType = "walking"
+	WorkoutTypeSkyDiving WorkoutType = "sky_diving"
+	WorkoutTypeSnowshoeing WorkoutType = "snowshoeing"
+	WorkoutTypeWinterSport WorkoutType = "winter_sport"
+	WorkoutTypeWakesurfing WorkoutType = "wakesurfing"
+	WorkoutTypeDance WorkoutType = "dance"
+	WorkoutTypeFlying WorkoutType = "flying"
+	WorkoutTypeWheelchairPushWalk WorkoutType = "wheelchair_push_walk"
+	WorkoutTypeMeditation WorkoutType = "meditation"
+	WorkoutTypeCricket WorkoutType = "cricket"
+	WorkoutTypeLacrosse WorkoutType = "lacrosse"
+	WorkoutTypeVolleyball WorkoutType = "volleyball"
+	WorkoutTypeMotorcycling WorkoutType = "motorcycling"
+	WorkoutTypeTactical WorkoutType = "tactical"
+	WorkoutTypeBaseball WorkoutType = "baseball"
+	WorkoutTypeVideoGaming WorkoutType = "video_gaming"
+	WorkoutTypeParaSport WorkoutType = "para_sport"
+	WorkoutTypeIndoorHandCycling WorkoutType = "indoor_hand_cycling"
+	WorkoutTypeMountaineering WorkoutType = "mountaineering"
+	WorkoutTypeFishing WorkoutType = "fishing"
+	WorkoutTypeFloorClimbing WorkoutType = "floor_climbing"
+	WorkoutTypeShooting WorkoutType = "shooting"
+	WorkoutTypeWheelchairPushRun WorkoutType = "wheelchair_push_run"
+	WorkoutTypeMotorSports WorkoutType = "motor_sports"
+	WorkoutTypeWindsurfing WorkoutType = "windsurfing"
+	WorkoutTypeRunning WorkoutType = "running"
+	WorkoutTypeTransition WorkoutType = "transition"
+	WorkoutTypeSwimming WorkoutType = "swimming"
+	WorkoutTypeSnowboarding WorkoutType = "snowboarding"
+	WorkoutTypeBoating WorkoutType = "boating"
+	WorkoutTypeHunting WorkoutType = "hunting"
+	WorkoutTypeObstacle WorkoutType = "obstacle"
+	WorkoutTypeTennis WorkoutType = "tennis"
+	WorkoutTypeHorsebackRiding WorkoutType = "horseback_riding"
+	WorkoutTypeVirtualActivity WorkoutType = "virtual_activity"
 )
 
 var workoutTypeConfigs = map[WorkoutType]WorkoutTypeConfiguration{
-	WorkoutTypeRunning: {Location: true, Distance: true, Repetition: false, Weight: false},
 	WorkoutTypeCycling: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypeECycling: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypeHorseRiding: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypeInlineSkating: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypeWalking: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypeSkiing: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypeSnowboarding: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypeSwimming: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeKitesurfing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeTraining: {Location: false, Distance: false, Repetition: true, Weight: true},
+	WorkoutTypeMultisport: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeGolf: {Location: true, Distance: true, Repetition: false, Weight: false},
 	WorkoutTypeKayaking: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypeRowing: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypeGolfing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeOverland: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeExpedition: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeAll: {Location: true, Distance: true, Repetition: true, Weight: true},
+	WorkoutTypeCrossCountrySkiing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeWakeboarding: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeWaterSkiing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeHockey: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeMixedMartialArts: {Location: true, Distance: false, Repetition: true, Weight: false},
+	WorkoutTypeSnorkeling: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeEBiking: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeInlineSkating: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeSurfing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeUltra: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeBasketball: {Location: true, Distance: false, Repetition: false, Weight: false},
 	WorkoutTypeHiking: {Location: true, Distance: true, Repetition: false, Weight: false},
-	WorkoutTypePushups: {Location: false, Distance: false, Repetition: true, Weight: false},
-	WorkoutTypeWeightLifting: {Location: false, Distance: false, Repetition: true, Weight: true},
-	WorkoutTypeOther: {Location: true, Distance: true, Repetition: true, Weight: true},
+	WorkoutTypeStandUpPaddleboarding: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeDiscGolf: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeWaterTubing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeWaterSport: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeDiving: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeHiit: {Location: false, Distance: false, Repetition: true, Weight: true},
+	WorkoutTypeRacket: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeRugby: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeMobility: {Location: false, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeBoxing: {Location: true, Distance: false, Repetition: true, Weight: false},
+	WorkoutTypeAmericanFootball: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeAlpineSkiing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypePaddling: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeDriving: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeHangGliding: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeRockClimbing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeSailing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeSoccer: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeGrinding: {Location: true, Distance: false, Repetition: true, Weight: false},
+	WorkoutTypeIceSkating: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeRafting: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeTeamSport: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeArchery: {Location: true, Distance: true, Repetition: true, Weight: false},
+	WorkoutTypeGeocaching: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeTrollingMotor: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeRowing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeJumpmaster: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeFitnessEquipment: {Location: false, Distance: false, Repetition: true, Weight: true},
+	WorkoutTypeSnowmobiling: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeJumpRope: {Location: false, Distance: false, Repetition: true, Weight: false},
+	WorkoutTypeCanoeing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeGeneric: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeWalking: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeSkyDiving: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeSnowshoeing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeWinterSport: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeWakesurfing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeDance: {Location: false, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeFlying: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeWheelchairPushWalk: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeMeditation: {Location: false, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeCricket: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeLacrosse: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeVolleyball: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeMotorcycling: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeTactical: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeBaseball: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeVideoGaming: {Location: false, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeParaSport: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeIndoorHandCycling: {Location: false, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeMountaineering: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeFishing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeFloorClimbing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeShooting: {Location: true, Distance: true, Repetition: true, Weight: false},
+	WorkoutTypeWheelchairPushRun: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeMotorSports: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeWindsurfing: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeRunning: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeTransition: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeSwimming: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeSnowboarding: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeBoating: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeHunting: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeObstacle: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeTennis: {Location: true, Distance: false, Repetition: false, Weight: false},
+	WorkoutTypeHorsebackRiding: {Location: true, Distance: true, Repetition: false, Weight: false},
+	WorkoutTypeVirtualActivity: {Location: false, Distance: false, Repetition: false, Weight: false},
 }

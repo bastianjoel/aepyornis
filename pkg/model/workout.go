@@ -102,7 +102,7 @@ func omitWorkoutAssociations(tx *gorm.DB) *gorm.DB {
 }
 
 func (w *Workout) HasCustomType() bool {
-	return w.Type == WorkoutTypeOther
+	return w.Type == WorkoutTypeGeneric
 }
 
 func (w *Workout) AfterFind(tx *gorm.DB) error {
@@ -383,21 +383,21 @@ func WorkoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	case "snowboarding":
 		return WorkoutTypeSnowboarding, true
 	case "horse-riding", "horseback-riding":
-		return WorkoutTypeHorseRiding, true
+		return WorkoutTypeHorsebackRiding, true
 	case "inline-skating", "skating", "skate":
 		return WorkoutTypeInlineSkating, true
 	case "skiing":
-		return WorkoutTypeSkiing, true
+		return WorkoutTypeAlpineSkiing, true
 	case "swimming":
 		return WorkoutTypeSwimming, true
 	case "kayaking":
 		return WorkoutTypeKayaking, true
 	case "golfing":
-		return WorkoutTypeGolfing, true
+		return WorkoutTypeGolf, true
 	case "hiking":
 		return WorkoutTypeHiking, true
 	case "push-ups":
-		return WorkoutTypePushups, true
+		return WorkoutTypeTraining, true
 	case "rowing":
 		return WorkoutTypeRowing, true
 	default:
