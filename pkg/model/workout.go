@@ -400,9 +400,14 @@ func WorkoutTypeFromData(gpxType string) (WorkoutType, bool) {
 		return WorkoutTypeTraining, true
 	case "rowing":
 		return WorkoutTypeRowing, true
-	default:
-		return WorkoutTypeAutoDetect, false
 	}
+
+	wType, found := ParseWorkoutType(gpxType)
+	if !found {
+		wType = WorkoutTypeAutoDetect
+	}
+
+	return wType, found
 }
 
 func autoDetectWorkoutType(stats *WorkoutStats, creator string, dataType string, dataName string) WorkoutType {
