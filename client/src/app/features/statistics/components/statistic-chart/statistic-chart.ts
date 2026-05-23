@@ -163,8 +163,9 @@ export class StatisticChartComponent implements AfterViewInit, OnDestroy {
           return null;
         }
 
+        const sportLabel = getSportLabel(value.local_workout_type) || value.local_workout_type;
         return {
-          label: this.translate.instant(getSportLabel(value.local_workout_type)),
+          label: this.translate.instant(sportLabel),
           data: data,
         };
       })
