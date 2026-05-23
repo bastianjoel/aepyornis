@@ -217,7 +217,7 @@
                     (change)="toggleDefaultFor(type.value)"
                   />
                   <label class="form-check-label" [for]="'edit-default-' + type.value">
-                    {{ sportLabel(type.value) | translate }}
+                    {{ type.name | translate }}
                   </label>
                 </div>
               }
