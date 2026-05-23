@@ -124,7 +124,7 @@ swagger:
 
 generate-workout-types:
 	go generate ./...
-	node scripts/generate-workout-types.js
+	cd client && npm run generate-workout-types
 
 test-packages:
 	$(GO_TEST) ./pkg/...

@@ -63,19 +63,18 @@ export const ICON_MAP: Record<string, string> = {
 
   // Sport Icons
   cycling: 'faSolidBicycle',
-  'e-cycling': 'faSolidBicycle', // Using bicycle as electric-bike not available
+  e_biking: 'faSolidBicycle', // Using bicycle as electric-bike not available
   running: 'faSolidPersonRunning',
   walking: 'faSolidPersonWalking',
   swimming: 'faSolidPersonSwimming',
-  'inline-skating': 'faSolidPersonSkating', // Using closest FA alternative
+  inline_skating: 'faSolidPersonSkating', // Using closest FA alternative
   skiing: 'faSolidPersonSkiing',
   snowboarding: 'faSolidPersonSnowboarding',
   golfing: 'faSolidGolfBallTee',
   kayaking: 'faSolidSailboat',
   hiking: 'faSolidPersonHiking',
-  'horse-riding': 'faSolidHorse', // Using FA icon as mdi-horse-human not available
-  'push-ups': 'faSolidDumbbell', // Using dumbbell as hugeicons-push-up-bar not available
-  'weight-lifting': 'faSolidDumbbell',
+  horse_riding: 'faSolidHorse', // Using FA icon as mdi-horse-human not available
+  training: 'faSolidDumbbell', // Using dumbbell as hugeicons-push-up-bar not available
   rowing: 'faSolidWater', // Using water as matSymbolsRowing not available
   other: 'faSolidQuestion',
 

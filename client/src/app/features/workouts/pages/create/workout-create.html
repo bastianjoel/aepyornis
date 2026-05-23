@@ -64,7 +64,7 @@
                 <select class="form-select" formControlName="type" id="type" [disabled]="loading()">
                   <option value="auto">{{ 'Auto-detect' | translate }}</option>
                   @for (wt of workoutTypes; track wt.value) {
-                    <option [value]="wt.value">{{ wt.value }}</option>
+                    <option [value]="wt.value">{{ wt.name }}</option>
                   }
                 </select>
               </div>
@@ -163,7 +163,7 @@
               >
                 <option value="">{{ 'Select...' | translate }}</option>
                 @for (wt of workoutTypes; track wt.value) {
-                  <option [value]="wt.value">{{ wt.value }}</option>
+                  <option [value]="wt.value">{{ wt.name }}</option>
                 }
               </select>
             </div>

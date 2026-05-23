@@ -28,9 +28,17 @@ msgstr "1 year"
 msgid "A workout with the same start time already exists."
 msgstr ""
 
+#: client/src/app/core/types/workout-types.ts
+msgid "AMRAP"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.ts
 msgid "API key reset successfully"
 msgstr "API key reset successfully"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "ATV"
+msgstr ""
 
 #: client/src/app/features/profile/pages/followers/followers.html
 msgid "Accept"
@@ -44,17 +52,29 @@ msgstr "Actions"
 msgid "Active"
 msgstr "Active"
 
+#: client/src/app/features/feed/components/feed-calendar/feed-calendar.html
+msgid "Activity day"
+msgstr ""
+
+#: client/src/app/features/profile/pages/privacy/privacy.html
+msgid "Activity pub"
+msgstr ""
+
 #: client/src/app/features/profile/services/profile-store.ts
 msgid "ActivityPub enabled"
 msgstr ""
 
 #: client/src/app/features/profile/pages/privacy/privacy.html
-msgid "ActivityPub is enabled"
+msgid "ActivityPub is enabled for this account"
 msgstr ""
 
 #: client/src/app/features/measurements/pages/measurements/measurements.html
 msgid "Add Measurement"
 msgstr "Add Measurement"
+
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "Add a comment"
+msgstr ""
 
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Add a workout"
@@ -80,13 +100,53 @@ msgstr "Add workouts"
 msgid "Admin"
 msgstr "Admin"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Adventure Race"
+msgstr ""
+
+#: client/src/app/core/components/sidebar/sidebar.html
+msgid "Aepyornis"
+msgstr "Aepyornis"
+
+#: client/src/app/core/components/base-map/base-map.ts
+msgid "Aerial"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "All"
 msgstr "All"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "All Sports"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Alpine Skiing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "American Football"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Apnea Diving"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Apnea Hunting"
+msgstr ""
+
 #: client/src/app/features/admin/pages/admin/admin.html
 msgid "Application settings"
 msgstr "Application settings"
+
+#: client/src/app/features/profile/pages/apps/apps.html
+msgid "Apps"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Archery"
+msgstr ""
 
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 msgid "Are You Sure You Want To Delete This Equipment"
@@ -144,8 +204,28 @@ msgstr "Average Slope"
 msgid "Average speed"
 msgstr "Average speed"
 
-#: client/src/app/features/workouts/pages/list/workouts.ts
-msgid "Average speed no pause"
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Average speed (no pause)"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "BMX"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Backcountry"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Badminton"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Baseball"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Basketball"
 msgstr ""
 
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
@@ -164,18 +244,46 @@ msgstr "Biggest climbs for {{sport}}"
 msgid "Biggest single climb"
 msgstr "Biggest single climb"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Bike to Run Transition"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Birthdate"
 msgstr "Birthdate"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Boating"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Bouldering"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Boxing"
+msgstr ""
 
 #: client/src/app/features/workouts/pages/detail/workout-detail.html
 msgid "Breakdown"
 msgstr "Breakdown"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Breathing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Brick"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.html
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Browser / System"
 msgstr "Browser / System"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "CCR Diving"
+msgstr ""
 
 #: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
 msgid "Cadence"
@@ -185,13 +293,38 @@ msgstr "Cadence"
 msgid "Calendar"
 msgstr "Calendar"
 
+#: client/src/app/features/profile/components/workout-calendar/workout-calendar.html
+msgid "Calendar navigation"
+msgstr ""
+
 #: client/src/app/features/admin/pages/user-edit/user-edit.html
 msgid "Cancel"
 msgstr "Cancel"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Canoeing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Cardio Training"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Casual Walking"
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-climbs/workout-climbs.html
 msgid "Category"
 msgstr "Category"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Challenge"
+msgstr ""
+
+#: client/src/app/features/profile/pages/privacy/privacy.html
+#: client/src/app/features/profile/pages/privacy/privacy.html
+msgid "Change password"
+msgstr ""
 
 #: client/src/app/core/components/footer/footer.html
 msgid "Changelog"
@@ -225,6 +358,14 @@ msgstr "Climbs and descents"
 msgid "Close"
 msgstr "Close"
 
+#: client/src/app/features/workouts/components/workout-comments/workout-comments.html
+msgid "Comments"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Commuting"
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-actions/workout-actions.html
 msgid "Confirm Delete"
 msgstr "Confirm Delete"
@@ -233,6 +374,14 @@ msgstr "Confirm Delete"
 #: client/src/app/features/auth/pages/login/login.html
 msgid "Confirm password"
 msgstr "Confirm password"
+
+#: client/src/app/features/profile/pages/apps/apps.html
+msgid "Connect"
+msgstr ""
+
+#: client/src/app/features/profile/pages/apps/apps.html
+msgid "Connected"
+msgstr ""
 
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Convert From Not Yet Supported File Format"
@@ -270,6 +419,30 @@ msgstr "Created"
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "Creating"
 msgstr "Creating"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Cricket"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Cross Country Skiing"
+msgstr ""
+
+#: client/src/app/features/profile/pages/privacy/privacy.html
+msgid "Current password"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Cycling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Cyclocross"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Dance"
+msgstr ""
 
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Dark"
@@ -337,6 +510,22 @@ msgstr "Disable account registration"
 msgid "Disable social sharing buttons"
 msgstr "Disable social sharing buttons"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Disc Golf"
+msgstr ""
+
+#: client/src/app/features/profile/pages/apps/apps.html
+msgid "Disconnect"
+msgstr ""
+
+#: client/src/app/features/profile/services/profile-store.ts
+msgid "Disconnect Hammerhead from your account?"
+msgstr ""
+
+#: client/src/app/features/profile/pages/infos/infos.html
+msgid "Display name"
+msgstr ""
+
 #: client/src/app/features/dashboard/components/key-metrics/key-metrics.html
 msgid "Distance"
 msgstr "Distance"
@@ -344,6 +533,14 @@ msgstr "Distance"
 #: client/src/app/features/workouts/pages/detail/workout-detail.html
 msgid "Distance chart"
 msgstr "Distance chart"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Diving"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Downhill"
+msgstr ""
 
 #: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
 #: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
@@ -354,9 +551,45 @@ msgstr "Download"
 msgid "Download Original File"
 msgstr "Download Original File"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Driving"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Duathlon"
+msgstr ""
+
 #: client/src/app/features/dashboard/components/key-metrics/key-metrics.html
 msgid "Duration"
 msgstr "Duration"
+
+#: client/src/app/features/workouts/components/workout-statistics/workout-statistics.ts
+msgid "Duration (No pause)"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Dynamic Apnea"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "E-Bike Enduro"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "E-Bike Fitness"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "E-Bike Mountain"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "E-Biking"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "EMOM"
+msgstr ""
 
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 msgid "Edit"
@@ -402,6 +635,14 @@ msgstr "Elevation gain"
 msgid "Elevation range"
 msgstr ""
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Elliptical"
+msgstr ""
+
+#: client/src/app/features/admin/pages/user-edit/user-edit.html
+msgid "Email"
+msgstr ""
+
 #: client/src/app/features/profile/pages/privacy/privacy.html
 msgid "Enable"
 msgstr ""
@@ -418,24 +659,32 @@ msgstr ""
 msgid "Enable ActivityPub in Privacy settings to receive follow requests."
 msgstr ""
 
-#: client/src/app/features/profile/pages/privacy/privacy.html
-msgid "Enable activity pub"
-msgstr ""
-
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "End Point"
 msgstr "End Point"
 
-#: client/src/app/features/profile/pages/profile/profile.html
-msgid "English"
-msgstr "English"
+#: client/src/app/core/types/workout-types.ts
+msgid "Enduro"
+msgstr ""
 
 #: client/src/app/features/equipment/pages/list/equipment.html
 msgid "Equipment"
 msgstr "Equipment"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Esport"
+msgstr ""
+
 #: client/src/app/core/i18n/marker-strings.ts
 msgid "Example backend message"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Exercise"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Expedition"
 msgstr ""
 
 #: client/src/app/features/measurements/pages/measurements/measurements.html
@@ -448,6 +697,10 @@ msgstr "FTP"
 msgid "Failed to accept follow request: {{message}}"
 msgstr ""
 
+#: client/src/app/features/profile/services/profile-store.ts
+msgid "Failed to change password: {{message}}"
+msgstr ""
+
 #: client/src/app/features/profile/pages/profile/profile.ts
 msgid "Failed to copy to clipboard"
 msgstr "Failed to copy to clipboard"
@@ -457,7 +710,15 @@ msgid "Failed to create workout. Please try again."
 msgstr ""
 
 #: client/src/app/features/profile/services/profile-store.ts
+msgid "Failed to disconnect Hammerhead: {{message}}"
+msgstr ""
+
+#: client/src/app/features/profile/services/profile-store.ts
 msgid "Failed to enable ActivityPub: {{message}}"
+msgstr ""
+
+#: client/src/app/features/profile/services/profile-store.ts
+msgid "Failed to load Hammerhead connection: {{message}}"
 msgstr ""
 
 #: client/src/app/features/profile/services/profile-store.ts
@@ -492,6 +753,10 @@ msgstr "Failed to reset API key: {{message}}"
 msgid "Failed to save profile: {{message}}"
 msgstr "Failed to save profile: {{message}}"
 
+#: client/src/app/features/profile/services/profile-store.ts
+msgid "Failed to start Hammerhead connection: {{message}}"
+msgstr ""
+
 #: client/src/app/features/profile/pages/user-profile/user-profile.ts
 msgid "Failed to update follow state. Please try again."
 msgstr ""
@@ -512,6 +777,10 @@ msgstr ""
 msgid "Feed"
 msgstr ""
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Field"
+msgstr ""
+
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "File"
 msgstr "File"
@@ -519,6 +788,66 @@ msgstr "File"
 #: client/src/app/core/components/base-list/base-list.html
 msgid "Filters"
 msgstr "Filters"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fishing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fitness Equipment"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Flexibility Training"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Floor Climbing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly Altimeter"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly Canopy"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly IFR"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly Navigate"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly Paraglide"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly Paramotor"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly Pressurized"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly Timer"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly VFR"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Fly WX"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Flying"
+msgstr ""
 
 #: client/src/app/features/profile/pages/user-profile/user-profile.html
 msgid "Follow"
@@ -540,12 +869,12 @@ msgstr ""
 msgid "Following"
 msgstr ""
 
-#: client/src/app/features/profile/pages/profile/profile.html
-msgid "French"
-msgstr "French"
-
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "GPX file"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Gauge Diving"
 msgstr ""
 
 #: client/src/app/features/profile/pages/general/general.html
@@ -556,9 +885,45 @@ msgstr ""
 msgid "Generate a new API key"
 msgstr "Generate a new API key"
 
-#: client/src/app/features/profile/pages/profile/profile.html
-msgid "German"
-msgstr "German"
+#: client/src/app/core/types/workout-types.ts
+msgid "Generic Activity"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Geocaching"
+msgstr ""
+
+#: client/src/app/features/feed/components/feed-sidebar/feed-sidebar.html
+msgid "Global"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Golf"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Gravel Cycling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Grinding"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "HIIT"
+msgstr ""
+
+#: client/src/app/features/profile/services/profile-store.ts
+msgid "Hammerhead disconnected"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Hand Cycling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Hang Gliding"
+msgstr ""
 
 #: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
 msgid "Heart rate"
@@ -582,9 +947,41 @@ msgstr "Height"
 msgid "Help Translate"
 msgstr "Help Translate"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "High Intensity Interval Training"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Hiking"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Hockey"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Horseback Riding"
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-breakdown/workout-breakdown.html
 msgid "Hr"
 msgstr "Hr"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Hunting"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Hunting With Dogs"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Ice"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Ice Skating"
+msgstr ""
 
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 msgid "Inactive"
@@ -598,13 +995,77 @@ msgstr "Index"
 msgid "Individual climbs ranked by elevation gain."
 msgstr "Individual climbs ranked by elevation gain."
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Indoor Climbing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Indoor Cycling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Indoor Grinding"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Indoor Hand Cycling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Indoor Rowing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Indoor Running"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Indoor Skiing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Indoor Walking"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Indoor Wheelchair Walk"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Inline Skating"
+msgstr ""
+
 #: client/src/app/features/profile/pages/privacy/privacy.html
 msgid "It cannot be disabled afterwards."
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Jump Rope"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Jumpmaster"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Kayaking"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Kitesurfing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Lacrosse"
 msgstr ""
 
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Language"
 msgstr "Language"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Lap Swimming"
+msgstr ""
 
 #: client/src/app/features/workouts/components/workout-breakdown/workout-breakdown.html
 msgid "Laps"
@@ -629,6 +1090,10 @@ msgstr "Leave blank to keep current password"
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Light"
 msgstr "Light"
+
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Likes"
+msgstr ""
 
 #: client/src/app/features/dashboard/components/recent-activity/recent-activity.html
 msgid "Load More"
@@ -663,6 +1128,10 @@ msgstr "Locked"
 msgid "Login failed"
 msgstr ""
 
+#: client/src/app/core/components/header/header.html
+msgid "Logout"
+msgstr ""
+
 #: client/src/app/features/statistics/pages/records/records.html
 msgid "Longest"
 msgstr "Longest"
@@ -670,10 +1139,6 @@ msgstr "Longest"
 #: client/src/app/features/statistics/pages/records/records.html
 msgid "Longest distance"
 msgstr "Longest distance"
-
-#: client/src/app/features/admin/pages/admin/admin.html
-msgid "Manage"
-msgstr "Manage"
 
 #: client/src/app/features/admin/pages/user-edit/user-edit.html
 msgid "Manage user: {{name}}"
@@ -686,6 +1151,10 @@ msgstr "Manage users ({{count}})"
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Manual"
 msgstr "Manual"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Match"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
 msgid "Matches"
@@ -717,6 +1186,10 @@ msgstr ""
 msgid "Measurements"
 msgstr "Measurements"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Meditation"
+msgstr ""
+
 #: client/src/app/features/profile/pages/user-profile/user-profile.html
 msgid "Member since"
 msgstr ""
@@ -729,13 +1202,65 @@ msgstr "Min elevation"
 msgid "Minimum"
 msgstr ""
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Mixed Martial Arts"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Mixed Surface"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Mobility"
+msgstr ""
+
 #: client/src/app/features/statistics/pages/statistics/statistics.ts
 msgid "Month"
 msgstr "Month"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Motocross"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Motor Sports"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Motorcycling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Mountain"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Mountaineering"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Multi Gas Diving"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Multisport"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Multisport Transition"
+msgstr ""
+
+#: client/src/app/features/feed/components/feed-calendar/feed-calendar.html
+msgid "My activity"
+msgstr ""
+
 #: client/src/app/features/admin/pages/admin/admin.html
 msgid "Name"
 msgstr "Name"
+
+#: client/src/app/features/profile/pages/privacy/privacy.html
+msgid "New password"
+msgstr ""
 
 #: client/src/app/core/components/pagination/pagination.html
 msgid "Next"
@@ -749,9 +1274,21 @@ msgstr "No"
 msgid "No More Activities"
 msgstr "No More Activities"
 
+#: client/src/app/features/feed/components/feed-calendar/feed-calendar.html
+msgid "No activity"
+msgstr ""
+
+#: client/src/app/features/profile/services/profile-store.ts
+msgid "No authorize URL returned by server"
+msgstr ""
+
 #: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
 msgid "No climb records yet."
 msgstr "No climb records yet."
+
+#: client/src/app/features/workouts/components/workout-comments/workout-comments.html
+msgid "No comments yet"
+msgstr ""
 
 #: client/src/app/features/statistics/pages/records/records.html
 msgid "No distance-based records yet."
@@ -769,6 +1306,10 @@ msgstr "No items found"
 msgid "No pending follow requests"
 msgstr ""
 
+#: client/src/app/features/profile/pages/search/search.html
+msgid "No profiles found"
+msgstr ""
+
 #: client/src/app/features/statistics/pages/records/records.html
 msgid "No records found yet. Start logging workouts to see your records."
 msgstr "No records found yet. Start logging workouts to see your records."
@@ -781,10 +1322,26 @@ msgstr ""
 msgid "No zone data available"
 msgstr "No zone data available"
 
+#: client/src/app/features/workouts/components/workout-map/workout-map.ts
+msgid "None"
+msgstr ""
+
+#: client/src/app/features/profile/pages/apps/apps.html
+msgid "Not connected"
+msgstr ""
+
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 #: client/src/app/features/equipment/pages/detail/equipment-detail.html
 msgid "Notes"
 msgstr "Notes"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Obstacle Course"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Open Water"
+msgstr ""
 
 #: client/src/app/features/profile/pages/followers/followers.html
 msgid "Open follow requests"
@@ -794,17 +1351,37 @@ msgstr ""
 msgid "Optional notes about this route segment"
 msgstr ""
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Overland"
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-breakdown/workout-breakdown.html
 msgid "Pace"
 msgstr "Pace"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Paddling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Padel"
+msgstr ""
+
 #: client/src/app/core/components/pagination/pagination.html
-msgid "Page {{currentPage}} of {{totalPages}} • {{totalEntries}} items"
-msgstr "Page {{currentPage}} of {{totalPages}} • {{totalEntries}} items"
+msgid "Page {{currentPage}} of {{ totalPages }} • {{ totalEntries }} items"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Para Sport"
+msgstr ""
 
 #: client/src/app/features/admin/pages/user-edit/user-edit.html
 msgid "Password"
 msgstr "Password"
+
+#: client/src/app/features/profile/services/profile-store.ts
+msgid "Password changed successfully"
+msgstr ""
 
 #: client/src/app/features/auth/pages/login/login.html
 msgid "Passwords do not match"
@@ -814,13 +1391,41 @@ msgstr "Passwords do not match"
 msgid "Per"
 msgstr "Per"
 
+#: client/src/app/features/workouts/pages/detail/workout-detail.html
+msgid "Performance curve"
+msgstr ""
+
 #: client/src/app/features/profile/pages/infos/infos.html
 msgid "Personal info"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Pickleball"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Pilates"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Platform"
 msgstr ""
 
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Please help translate via Weblate"
 msgstr "Please help translate via Weblate"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Pool Apnea"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Pool Triathlon"
+msgstr ""
+
+#: client/src/app/features/feed/components/feed-post/feed-post.html
+msgid "Post Comment"
+msgstr ""
 
 #: client/src/app/features/profile/pages/user-profile/user-profile.html
 msgid "Posts"
@@ -837,6 +1442,10 @@ msgstr "Power zones"
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Preferred units"
 msgstr "Preferred units"
+
+#: client/src/app/features/profile/components/workout-calendar/workout-calendar.html
+msgid "Previous"
+msgstr ""
 
 #: client/src/app/features/profile/pages/privacy/privacy.html
 msgid "Privacy"
@@ -858,6 +1467,26 @@ msgstr "Profile updated successfully"
 msgid "Public"
 msgstr ""
 
+#: client/src/app/core/types/workout-types.ts
+msgid "RC Drone"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Racket Sport"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Racquetball"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Rafting"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Rally"
+msgstr ""
+
 #: client/src/app/features/statistics/pages/climb-ranking/climb-ranking.html
 msgid "Rank"
 msgstr "Rank"
@@ -866,10 +1495,6 @@ msgstr "Rank"
 msgid "Recent No Activity"
 msgstr "Recent No Activity"
 
-#: client/src/app/features/dashboard/components/recent-activity/recent-activity.html
-msgid "Recent activity"
-msgstr "Recent activity"
-
 #: client/src/app/features/statistics/pages/records/records.html
 msgid "Records"
 msgstr "Records"
@@ -877,6 +1502,10 @@ msgstr "Records"
 #: client/src/app/features/dashboard/components/records/records.html
 msgid "Records for {{sport}}"
 msgstr "Records for {{sport}}"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Recumbent"
+msgstr ""
 
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "Refresh"
@@ -911,6 +1540,10 @@ msgstr "Repetitions"
 msgid "Reset"
 msgstr "Reset"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Resort"
+msgstr ""
+
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Resources"
 msgstr "Resources"
@@ -925,6 +1558,14 @@ msgstr "Respiration rate"
 msgid "Resting HR"
 msgstr "Resting HR"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Road"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Rock Climbing"
+msgstr ""
+
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "Roundtour"
 msgstr ""
@@ -932,6 +1573,34 @@ msgstr ""
 #: client/src/app/core/components/sidebar/sidebar.ts
 msgid "Route segments"
 msgstr "Route segments"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Rowing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Rucking"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Rugby"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Run to Bike Transition"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Running"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Sail Race"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Sailing"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/edit/edit-route-segment.html
 msgid "Save changes"
@@ -944,6 +1613,17 @@ msgstr "Saving..."
 #: client/src/app/core/components/base-list/base-list.html
 msgid "Search"
 msgstr "Search"
+
+#: client/src/app/features/profile/pages/search/search.html
+msgid ""
+"Search by display name, username, or full ActivityPub handle to discover "
+"profiles and follow them."
+msgstr ""
+
+#: client/src/app/features/profile/pages/search/search.html
+#: client/src/app/features/profile/pages/search/search.html
+msgid "Search profiles"
+msgstr ""
 
 #: client/src/app/features/route-segments/pages/create/create-route-segment.html
 msgid "Segment Details"
@@ -986,8 +1666,40 @@ msgstr "Sign in"
 msgid "Since"
 msgstr "Since"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Single Gas Diving"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Skate Skiing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Sky Diving"
+msgstr ""
+
 #: client/src/app/features/workouts/components/workout-statistics/workout-statistics.ts
 msgid "Slope"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Snorkeling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Snowboarding"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Snowmobiling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Snowshoeing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Soccer"
 msgstr ""
 
 #: client/src/app/features/workouts/pages/list/workouts.html
@@ -1003,9 +1715,33 @@ msgstr "Source"
 msgid "Speed"
 msgstr "Speed"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Speed Walking"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Spin"
+msgstr ""
+
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Split Files With Multiple Tracks"
 msgstr "Split Files With Multiple Tracks"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Sport Shooting"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Squash"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Stair Climbing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Stand Up Paddleboarding"
+msgstr ""
 
 #: client/src/app/features/workouts/components/workout-climbs/workout-climbs.html
 msgid "Start"
@@ -1029,9 +1765,57 @@ msgstr "Status"
 msgid "Steps"
 msgstr "Steps"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Street"
+msgstr ""
+
+#: client/src/app/core/components/base-map/base-map.ts
+msgid "Streets"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Strength Training"
+msgstr ""
+
 #: client/src/app/features/workouts/pages/detail/workout-detail.html
 msgid "Sub type"
 msgstr "Sub type"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Surfing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Swim Run"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Swim to Bike Transition"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Swimming"
+msgstr ""
+
+#: client/src/app/features/profile/pages/apps/apps.html
+msgid "Sync completed activities from Hammerhead and automatically create workouts."
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Tabata"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Table Tennis"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Tactical"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Team Sport"
+msgstr ""
 
 #: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
 msgid "Temperature"
@@ -1040,6 +1824,10 @@ msgstr "Temperature"
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "Tempo"
 msgstr "Tempo"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Tennis"
+msgstr ""
 
 #: client/src/app/features/route-segments/components/route-segment-actions/route-segment-actions.html
 msgid "The workout will be refreshed soon…"
@@ -1081,6 +1869,10 @@ msgstr ""
 msgid "Time zone"
 msgstr "Time zone"
 
+#: client/src/app/features/profile/components/workout-calendar/workout-calendar.html
+msgid "Today"
+msgstr ""
+
 #: client/src/app/core/components/base-list/base-list.html
 msgid "Toggle filters"
 msgstr "Toggle filters"
@@ -1121,6 +1913,34 @@ msgstr ""
 msgid "Totals to show on dashboard"
 msgstr "Totals to show on dashboard"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Track"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Track Cycling"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Trail"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Training"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Treadmill"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Triathlon"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Trolling Motor"
+msgstr ""
+
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Try one of these sites:"
 msgstr "Try one of these sites:"
@@ -1128,6 +1948,10 @@ msgstr "Try one of these sites:"
 #: client/src/app/features/workouts/components/workout-climbs/workout-climbs.html
 msgid "Type"
 msgstr "Type"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Ultramarathon"
+msgstr ""
 
 #: client/src/app/features/profile/pages/user-profile/user-profile.html
 msgid "Unfollow"
@@ -1197,21 +2021,60 @@ msgstr "User"
 msgid "Username"
 msgstr "Username"
 
-#: client/src/app/features/auth/pages/login/login.html
-#: client/src/app/features/auth/pages/login/login.html
-msgid "Username (email)"
-msgstr "Username (email)"
+#: client/src/app/core/types/workout-types.ts
+msgid "Video Gaming"
+msgstr ""
 
 #: client/src/app/features/workouts/components/workout-list-actions/workout-list-actions.html
 msgid "View"
 msgstr "View"
 
+#: client/src/app/features/profile/pages/search/search.html
+msgid "View profile"
+msgstr ""
+
 #: client/src/app/features/statistics/pages/records/records.html
 msgid "View ranking"
 msgstr "View ranking"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Virtual Activity"
+msgstr ""
+
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Visibility"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Volleyball"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Wakeboarding"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Wakesurfing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Walking"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Warm Up"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Water Skiing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Water Sport"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Water Tubing"
 msgstr ""
 
 #: client/src/app/features/statistics/pages/statistics/statistics.ts
@@ -1228,6 +2091,30 @@ msgstr "Weight"
 msgid "Welcome!"
 msgstr "Welcome!"
 
+#: client/src/app/core/types/workout-types.ts
+msgid "Wheelchair Push Run"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Wheelchair Push Walk"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Whitewater"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Windsurfing"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Wingsuit"
+msgstr ""
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Winter Sport"
+msgstr ""
+
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "Workout"
 msgstr "Workout"
@@ -1235,10 +2122,6 @@ msgstr "Workout"
 #: client/src/app/features/route-segments/pages/detail/route-segment-detail.html
 msgid "Workout Matches"
 msgstr "Workout Matches"
-
-#: client/src/app/core/components/sidebar/sidebar.html
-msgid "Aepyornis"
-msgstr "Aepyornis"
 
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "Workout type"
@@ -1259,6 +2142,10 @@ msgstr "Year"
 #: client/src/app/features/admin/pages/admin/admin.html
 msgid "Yes"
 msgstr "Yes"
+
+#: client/src/app/core/types/workout-types.ts
+msgid "Yoga"
+msgstr ""
 
 #: client/src/app/features/workouts/pages/create/workout-create.html
 msgid "You can edit your GPX files before uploading them here:"
@@ -1284,10 +2171,6 @@ msgstr "cm"
 msgid "cycling"
 msgstr "cycling"
 
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "e-cycling"
-msgstr "e-cycling"
-
 #: client/src/app/features/admin/pages/admin/admin.html
 msgid "environment variables"
 msgstr "environment variables"
@@ -1309,25 +2192,9 @@ msgstr "forever"
 msgid "ft"
 msgstr "ft"
 
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "golfing"
-msgstr "golfing"
-
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "hiking"
-msgstr "hiking"
-
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "horse riding"
-msgstr "horse riding"
-
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "in"
 msgstr "in"
-
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "inline skating"
-msgstr "inline skating"
 
 #: client/src/app/core/components/base-list/base-list.html
 msgid "item selected"
@@ -1336,10 +2203,6 @@ msgstr "item selected"
 #: client/src/app/core/components/base-list/base-list.html
 msgid "items selected"
 msgstr "items selected"
-
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "kayaking"
-msgstr "kayaking"
 
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "kg"
@@ -1369,25 +2232,13 @@ msgstr "mi"
 msgid "mph"
 msgstr "mph"
 
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "other"
-msgstr "other"
-
 #: client/src/app/features/profile/pages/user-profile/user-profile.ts
 msgid "profile"
 msgstr ""
 
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "push-ups"
-msgstr "push-ups"
-
 #: client/src/app/features/workouts/components/route-segment-matches/route-segment-matches.html
 msgid "route segment"
 msgstr "route segment"
-
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "rowing"
-msgstr "rowing"
 
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "running"
@@ -1397,18 +2248,6 @@ msgstr "running"
 msgid "show/hide"
 msgstr "show/hide"
 
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "skiing"
-msgstr "skiing"
-
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "snowboarding"
-msgstr "snowboarding"
-
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "swimming"
-msgstr "swimming"
-
 #: client/src/app/features/admin/pages/admin/admin.html
 msgid "the configuration file"
 msgstr "the configuration file"
@@ -1417,17 +2256,9 @@ msgstr "the configuration file"
 msgid "unknown"
 msgstr "unknown"
 
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "virtual activity"
-msgstr "virtual activity"
-
 #: client/src/app/features/profile/pages/profile/profile.html
 msgid "walking"
 msgstr "walking"
-
-#: client/src/app/core/i18n/sport-labels.ts
-msgid "weight lifting"
-msgstr "weight lifting"
 
 #: client/src/app/features/workouts/components/workout-chart/workout-chart.ts
 msgid "workout.elevation"

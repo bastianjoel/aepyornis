@@ -30,7 +30,7 @@
       >
         <option value="">{{ 'All' | translate }}</option>
         @for (type of workoutTypes; track type.value) {
-          <option [value]="type.value">{{ sportLabel(type.value) | translate }}</option>
+          <option [value]="type.value">{{ type.name | translate }}</option>
         }
       </select>
     </div>

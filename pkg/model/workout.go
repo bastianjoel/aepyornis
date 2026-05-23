@@ -102,7 +102,7 @@ func omitWorkoutAssociations(tx *gorm.DB) *gorm.DB {
 }
 
 func (w *Workout) HasCustomType() bool {
-	return w.Type == WorkoutTypeOther
+	return w.Type == WorkoutTypeGeneric
 }
 
 func (w *Workout) AfterFind(tx *gorm.DB) error {
@@ -374,35 +374,31 @@ func (w *Workout) SetContent(filename string, content []byte) {
 
 func WorkoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	switch strings.ToLower(gpxType) {
-	case "running", "run":
+	case "run":
 		return WorkoutTypeRunning, true
-	case "walking", "walk":
+	case "walk":
 		return WorkoutTypeWalking, true
-	case "cycling", "cycle":
+	case "cycle":
 		return WorkoutTypeCycling, true
-	case "snowboarding":
-		return WorkoutTypeSnowboarding, true
-	case "horse-riding", "horseback-riding":
-		return WorkoutTypeHorseRiding, true
-	case "inline-skating", "skating", "skate":
+	case "horse-riding":
+		return WorkoutTypeHorsebackRiding, true
+	case "skating", "skate":
 		return WorkoutTypeInlineSkating, true
 	case "skiing":
-		return WorkoutTypeSkiing, true
-	case "swimming":
-		return WorkoutTypeSwimming, true
-	case "kayaking":
-		return WorkoutTypeKayaking, true
+		return WorkoutTypeAlpineSkiing, true
 	case "golfing":
-		return WorkoutTypeGolfing, true
-	case "hiking":
-		return WorkoutTypeHiking, true
+		return WorkoutTypeGolf, true
 	case "push-ups":
-		return WorkoutTypePushups, true
-	case "rowing":
-		return WorkoutTypeRowing, true
-	default:
-		return WorkoutTypeAutoDetect, false
+		return WorkoutTypeTraining, true
 	}
+
+	snakeCaseType := strings.ReplaceAll(gpxType, "-", "_")
+	wType, found := ParseWorkoutType(snakeCaseType)
+	if !found {
+		wType = WorkoutTypeAutoDetect
+	}
+
+	return wType, found
 }
 
 func autoDetectWorkoutType(stats *WorkoutStats, creator string, dataType string, dataName string) WorkoutType {
@@ -727,7 +723,7 @@ func (w *Workout) ReparseFile() (*Workout, error) {
 }
 
 func (w *Workout) setData(updated *Workout) {
-	if updated == nil || updated.Data == nil {
+	if updated == nil {
 		return
 	}
 
@@ -747,28 +743,22 @@ func (w *Workout) setData(updated *Workout) {
 		w.TotalRepetitions = updated.TotalRepetitions
 		w.TotalWeight = updated.TotalWeight
 		w.ExtraMetrics = append([]string(nil), updated.ExtraMetrics...)
-	} else if w.Data != nil {
-		data.Address = w.Data.Address
 	}
 
-	if w.Data == nil {
+	if w.Data != nil {
+		data.ID = w.Data.ID
+		data.CreatedAt = w.Data.CreatedAt
+		data.WorkoutID = w.ID
+		data.Address = w.Data.Address
+		w.Data = data
+	} else if data != nil {
 		w.Data = data
 		w.Data.WorkoutID = w.ID
-		w.Records = append([]WorkoutRecord(nil), records...)
-		w.Events = append([]WorkoutEvent(nil), events...)
-		w.Laps = append([]WorkoutLap(nil), laps...)
-
-		return
 	}
-
-	data.ID = w.Data.ID
-	data.CreatedAt = w.Data.CreatedAt
-	data.WorkoutID = w.ID
 
 	w.Records = append([]WorkoutRecord(nil), records...)
 	w.Events = append([]WorkoutEvent(nil), events...)
 	w.Laps = append([]WorkoutLap(nil), laps...)
-	w.Data = data
 }
 
 func (w *Workout) UpdateAverages() {
@@ -864,14 +854,17 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 		return err
 	}
 
-	if updatedWorkout == nil || updatedWorkout.Data == nil {
-		return errors.New("parsed workout has no map data")
+	if updatedWorkout == nil {
+		return errors.New("parsed workout has no records")
 	}
 
 	w.setData(updatedWorkout)
 
-	if err := w.Data.Save(db); err != nil {
-		return err
+	if w.Data != nil {
+		w.Data.UpdateAddress()
+		if err := w.Data.Save(db); err != nil {
+			return err
+		}
 	}
 
 	if err := w.UpdateRouteSegmentMatches(db); err != nil {
@@ -883,7 +876,6 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 	if err := w.UpdateRecords(db); err != nil {
 		return err
 	}
-	w.Data.UpdateAddress()
 	w.CalculateSlopes()
 
 	w.Dirty = false
@@ -1077,8 +1069,10 @@ func replaceWorkoutRouteSegmentMatches(tx *gorm.DB, workoutID uint64, matches []
 
 func init() {
 	// Gets overwritten in converters module
-	WorkoutParser = func(filename string, content []byte) ([]*Workout, error) {
-		return nil, nil
+	if WorkoutParser == nil {
+		WorkoutParser = func(filename string, content []byte) ([]*Workout, error) {
+			return nil, nil
+		}
 	}
 }
 
