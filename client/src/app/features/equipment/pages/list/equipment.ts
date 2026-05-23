@@ -11,7 +11,6 @@ import { BaseList, BaseListConfig } from '../../../../core/components/base-list/
 import { PaginatedListView } from '../../../../core/components/paginated-list-view/paginated-list-view';
 import { BaseTable } from '../../../../core/components/base-table/base-table';
 import { WORKOUT_TYPES } from '../../../../core/types/workout-types';
-import { getSportLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-equipment',
@@ -33,7 +32,6 @@ export class Equipment extends PaginatedListView<EquipmentModel> {
   };
 
   public readonly workoutTypes = WORKOUT_TYPES;
-  public readonly sportLabel = getSportLabel;
 
   // Modal state
   public readonly showCreateModal = signal(false);

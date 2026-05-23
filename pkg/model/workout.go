@@ -102,7 +102,7 @@ func omitWorkoutAssociations(tx *gorm.DB) *gorm.DB {
 }
 
 func (w *Workout) HasCustomType() bool {
-	return w.Type == WorkoutTypeOther
+	return w.Type == WorkoutTypeGeneric
 }
 
 func (w *Workout) AfterFind(tx *gorm.DB) error {
@@ -374,35 +374,31 @@ func (w *Workout) SetContent(filename string, content []byte) {
 
 func WorkoutTypeFromData(gpxType string) (WorkoutType, bool) {
 	switch strings.ToLower(gpxType) {
-	case "running", "run":
+	case "run":
 		return WorkoutTypeRunning, true
-	case "walking", "walk":
+	case "walk":
 		return WorkoutTypeWalking, true
-	case "cycling", "cycle":
+	case "cycle":
 		return WorkoutTypeCycling, true
-	case "snowboarding":
-		return WorkoutTypeSnowboarding, true
-	case "horse-riding", "horseback-riding":
-		return WorkoutTypeHorseRiding, true
-	case "inline-skating", "skating", "skate":
+	case "horse-riding":
+		return WorkoutTypeHorsebackRiding, true
+	case "skating", "skate":
 		return WorkoutTypeInlineSkating, true
 	case "skiing":
-		return WorkoutTypeSkiing, true
-	case "swimming":
-		return WorkoutTypeSwimming, true
-	case "kayaking":
-		return WorkoutTypeKayaking, true
+		return WorkoutTypeAlpineSkiing, true
 	case "golfing":
-		return WorkoutTypeGolfing, true
-	case "hiking":
-		return WorkoutTypeHiking, true
+		return WorkoutTypeGolf, true
 	case "push-ups":
-		return WorkoutTypePushups, true
-	case "rowing":
-		return WorkoutTypeRowing, true
-	default:
-		return WorkoutTypeAutoDetect, false
+		return WorkoutTypeTraining, true
 	}
+
+	snakeCaseType := strings.ReplaceAll(gpxType, "-", "_")
+	wType, found := ParseWorkoutType(snakeCaseType)
+	if !found {
+		wType = WorkoutTypeAutoDetect
+	}
+
+	return wType, found
 }
 
 func autoDetectWorkoutType(stats *WorkoutStats, creator string, dataType string, dataName string) WorkoutType {
