@@ -20,8 +20,6 @@ workout_types:
     sub_types:
       treadmill:
         name: "Treadmill"
-        overwrite:
-          location: false
       street:
         name: "Street"
       trail:
