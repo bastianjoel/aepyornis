@@ -1,0 +1,21 @@
+<form [formGroup]="store.profileForm" (ngSubmit)="store.saveProfile()">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header">
+      <h3 class="h5 mb-0">{{ 'Notifications' | translate }}</h3>
+    </div>
+    <div class="card-body"></div>
+  </div>
+
+  <button
+    class="btn btn-primary"
+    type="submit"
+    [disabled]="store.saving() || store.profileForm.invalid"
+  >
+    @if (store.saving()) {
+      <span aria-hidden="true" class="spinner-border spinner-border-sm me-2" role="status"></span>
+      {{ 'Saving...' | translate }}
+    } @else {
+      {{ 'Update profile' | translate }}
+    }
+  </button>
+</form>
