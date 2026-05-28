@@ -149,3 +149,18 @@ func (c *Config) JWTSecret() []byte {
 
 	return []byte(c.JWTEncryptionKey)
 }
+
+func (c *Config) AvailableNotificationProviders() []string {
+	providers := []string{"database"}
+
+	hasMailjetCredentials := c.MailjetPrivateKey != "" && c.MailjetPublicKey != ""
+	if (hasMailjetCredentials || c.SmtpHost != "") && c.MailSenderAddress != "" && c.MailSenderName != "" {
+		providers = append(providers, "mail")
+	}
+
+	if c.VapidPrivateKey != "" && c.VapidPublicKey != "" {
+		providers = append(providers, "webpush")
+	}
+
+	return providers
+}

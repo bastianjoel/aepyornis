@@ -274,12 +274,13 @@ func (a *App) apiV2LookupAddressHandler(c echo.Context) error {
 func (a *App) apiV2AppInfoHandler(c echo.Context) error {
 	resp := dto.Response[dto.AppInfoResponse]{
 		Results: dto.AppInfoResponse{
-			Version:              a.Version.PrettyVersion(),
-			VersionSha:           a.Version.Sha,
-			RegistrationDisabled: a.Config.RegistrationDisabled,
-			SocialsDisabled:      a.Config.SocialsDisabled,
-			AutoImportEnabled:    a.Config.AutoImportEnabled,
-			ActivityPubActive:    a.Config.ActivityPubActive,
+			Version:               a.Version.PrettyVersion(),
+			VersionSha:            a.Version.Sha,
+			RegistrationDisabled:  a.Config.RegistrationDisabled,
+			SocialsDisabled:       a.Config.SocialsDisabled,
+			AutoImportEnabled:     a.Config.AutoImportEnabled,
+			ActivityPubActive:     a.Config.ActivityPubActive,
+			NotificationProviders: a.Config.AvailableNotificationProviders(),
 		},
 	}
 
