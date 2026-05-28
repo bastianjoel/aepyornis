@@ -120,15 +120,17 @@ func (s *notificationService) getWebpushService(receiver *model.User) []notify.N
 	services := []notify.Notifier{}
 
 	var userConfig model.UserNotificationSettings
-	s.db.Where("user_id = ?", receiver.ID).First(&userConfig)
+	if err := s.db.Where("user_id = ? AND method = 'webpush'", receiver.ID).First(&userConfig); err != nil {
+		return services
+	}
 
-	if len(userConfig.MethodSettings) == 0 {
+	if userConfig.MethodSettings == nil {
 		return services
 	}
 
 	if s.cfg.VapidPrivateKey != "" && s.cfg.VapidPublicKey != "" {
 		var receiver webpush.Subscription
-		if err := json.Unmarshal(userConfig.MethodSettings, &receiver); err != nil {
+		if err := json.Unmarshal(*userConfig.MethodSettings, &receiver); err != nil {
 			return services
 		}
 
