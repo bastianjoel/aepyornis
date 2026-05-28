@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/AepyornisNet/aepyornis/pkg/config"
@@ -9,6 +10,7 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/notification"
 	"github.com/nikoksr/notify"
 	"github.com/nikoksr/notify/service/mail"
+	"github.com/nikoksr/notify/service/webpush"
 	"github.com/samber/do/v2"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -55,7 +57,7 @@ func (s *notificationService) SendRaw(ctx context.Context, user *model.User, sub
 		return fmt.Errorf("could not save notification: %w", err)
 	}
 
-	n := notify.NewWithServices(s.getEmailService(user.Email)...)
+	n := notify.NewWithServices(s.getEmailService(user)...)
 	if err := n.Send(ctx, subject, message); err != nil {
 		return err
 	}
@@ -81,12 +83,12 @@ func (s *notificationService) Send(ctx context.Context, user *model.User, in Bas
 
 	services := []notify.Notifier{}
 	if in.AllowEmail() {
-		services = append(services, s.getEmailService(user.Email)...)
+		services = append(services, s.getEmailService(user)...)
 	}
 
-	// TODO: Add webpush config
-	// if in.AllowWebpush() {
-	// }
+	if in.AllowWebpush() {
+		services = append(services, s.getWebpushService(user)...)
+	}
 
 	if len(services) > 0 {
 		n := notify.NewWithServices(services...)
@@ -98,17 +100,41 @@ func (s *notificationService) Send(ctx context.Context, user *model.User, in Bas
 	return nil
 }
 
-func (s *notificationService) getEmailService(receiver string) []notify.Notifier {
+func (s *notificationService) getEmailService(receiver *model.User) []notify.Notifier {
 	services := []notify.Notifier{}
 
 	if s.cfg.SmtpHost != "" && s.cfg.MailSenderAddress != "" {
 		mailService := mail.New(s.cfg.MailSenderAddress, s.cfg.SmtpHost)
-		mailService.AddReceivers(receiver)
+		mailService.AddReceivers(receiver.Email)
 		services = append(services, mailService)
 	} else if s.cfg.MailjetPublicKey != "" && s.cfg.MailjetPrivateKey != "" {
 		mailService := notification.NewMailjet(s.cfg.MailjetPublicKey, s.cfg.MailjetPrivateKey, s.cfg.MailSenderAddress, s.cfg.MailSenderName)
-		mailService.AddReceivers(receiver)
+		mailService.AddReceivers(receiver.Email)
 		services = append(services, mailService)
+	}
+
+	return services
+}
+
+func (s *notificationService) getWebpushService(receiver *model.User) []notify.Notifier {
+	services := []notify.Notifier{}
+
+	var userConfig model.UserNotificationSettings
+	s.db.Where("user_id = ?", receiver.ID).First(&userConfig)
+
+	if len(userConfig.MethodSettings) == 0 {
+		return services
+	}
+
+	if s.cfg.VapidPrivateKey != "" && s.cfg.VapidPublicKey != "" {
+		var receiver webpush.Subscription
+		if err := json.Unmarshal(userConfig.MethodSettings, &receiver); err != nil {
+			return services
+		}
+
+		webpushSvc := webpush.New(s.cfg.VapidPublicKey, s.cfg.VapidPrivateKey)
+		webpushSvc.AddReceivers(receiver)
+		services = append(services, webpushSvc)
 	}
 
 	return services
