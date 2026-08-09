@@ -188,6 +188,13 @@ func (rs *RouteSegment) Create(db *gorm.DB) error {
 		return ErrInvalidData
 	}
 
+	if rs.ProfileID == 0 {
+		var firstProfile Profile
+		if err := db.Order("id ASC").First(&firstProfile).Error; err == nil {
+			rs.ProfileID = firstProfile.ID
+		}
+	}
+
 	return db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Omit("RouteSegmentMatches").Create(rs).Error; err != nil {
 			return err

@@ -6,6 +6,23 @@ import (
 	"github.com/AepyornisNet/aepyornis/pkg/model"
 )
 
+type CourseRecordInfo struct {
+	WorkoutID   uint64  `json:"workout_id"`
+	WorkoutName string  `json:"workout_name"`
+	ProfileID   uint64  `json:"profile_id"`
+	ProfileName string  `json:"profile_name"`
+	Duration    int     `json:"duration"`
+	Speed       float64 `json:"speed"`
+}
+
+type RouteSegmentStatsResponse struct {
+	TotalEfforts   int64             `json:"total_efforts"`
+	UniqueAthletes int64             `json:"unique_athletes"`
+	AvgDuration    float64           `json:"avg_duration"`
+	AvgSpeed       float64           `json:"avg_speed"`
+	CourseRecord   *CourseRecordInfo `json:"course_record,omitempty"`
+}
+
 // RouteSegmentResponse represents a route segment in API v2 responses
 type RouteSegmentResponse struct {
 	ID            uint64                       `json:"id"`
@@ -27,6 +44,10 @@ type RouteSegmentResponse struct {
 	Bidirectional bool                         `json:"bidirectional"`
 	Circular      bool                         `json:"circular"`
 	MatchCount    int                          `json:"match_count"`
+	LikeCount     int64                        `json:"like_count"`
+	HasLiked      bool                         `json:"has_liked"`
+	CanEdit       bool                         `json:"can_edit"`
+	CanDelete     bool                         `json:"can_delete"`
 	CreatedAt     time.Time                    `json:"created_at"`
 	UpdatedAt     time.Time                    `json:"updated_at"`
 }
@@ -89,28 +110,65 @@ type MapPoint struct {
 
 // RouteSegmentMatch represents a match of a route segment in a workout
 type RouteSegmentMatch struct {
-	WorkoutID    uint64  `json:"workout_id"`
-	WorkoutName  string  `json:"workout_name"`
-	UserID       uint64  `json:"user_id"`
-	UserName     string  `json:"user_name"`
-	Distance     float64 `json:"distance"`
-	Duration     int     `json:"duration"`
-	AverageSpeed float64 `json:"average_speed"`
+	ID           uint64    `json:"id"`
+	WorkoutID    uint64    `json:"workout_id"`
+	WorkoutName  string    `json:"workout_name"`
+	WorkoutDate  time.Time `json:"workout_date"`
+	ProfileID    uint64    `json:"profile_id"`
+	ProfileName  string    `json:"profile_name"`
+	UserID       uint64    `json:"user_id,omitempty"`
+	UserName     string    `json:"user_name,omitempty"`
+	Distance     float64   `json:"distance"`
+	Duration     int       `json:"duration"`
+	AverageSpeed float64   `json:"average_speed"`
 }
+
+func NewRouteSegmentMatchResponse(m *model.RouteSegmentMatch) RouteSegmentMatch {
+	if m == nil {
+		return RouteSegmentMatch{}
+	}
+
+	var profileID uint64
+	profileName := ""
+	var workoutDate time.Time
+	workoutName := ""
+
+	if m.Workout != nil {
+		workoutName = m.Workout.Name
+		workoutDate = m.Workout.GetDate()
+		if m.Workout.Profile != nil {
+			profileID = m.Workout.Profile.ID
+			profileName = m.Workout.Profile.DisplayName
+		}
+	}
+
+	return RouteSegmentMatch{
+		ID:           m.ID,
+		WorkoutID:    m.WorkoutID,
+		WorkoutName:  workoutName,
+		WorkoutDate:  workoutDate,
+		ProfileID:    profileID,
+		ProfileName:  profileName,
+		Distance:     m.Distance,
+		Duration:     int(m.Duration.Seconds()),
+		AverageSpeed: m.AverageSpeed(),
+	}
+}
+
+type RouteSegmentsDetailResponse []*RouteSegmentResponse
 
 // RouteSegmentDetailResponse represents a detailed route segment with map data and matches
 type RouteSegmentDetailResponse struct {
 	RouteSegmentResponse
-	Points  []MapPoint          `json:"points"`
-	Matches []RouteSegmentMatch `json:"matches"`
-	Center  struct {
+	Points        []MapPoint                 `json:"points"`
+	Matches       []RouteSegmentMatch        `json:"matches"`
+	Stats         *RouteSegmentStatsResponse `json:"stats,omitempty"`
+	Center        struct {
 		Lat float64 `json:"lat"`
 		Lng float64 `json:"lng"`
 	} `json:"center"`
 	AddressString string `json:"address_string"`
 }
-
-type RouteSegmentsDetailResponse []*RouteSegmentResponse
 
 // NewRouteSegmentDetailResponse converts a database route segment to detailed API response
 func NewRouteSegmentDetailResponse(rs *model.RouteSegment) RouteSegmentDetailResponse {
@@ -137,24 +195,7 @@ func NewRouteSegmentDetailResponse(rs *model.RouteSegment) RouteSegmentDetailRes
 	// Convert matches
 	response.Matches = make([]RouteSegmentMatch, len(rs.RouteSegmentMatches))
 	for i, m := range rs.RouteSegmentMatches {
-		var userID uint64
-		userName := ""
-		if m.Workout.Profile != nil {
-			if m.Workout.Profile.UserID != nil {
-				userID = *m.Workout.Profile.UserID
-			}
-			userName = m.Workout.Profile.DisplayName
-		}
-
-		response.Matches[i] = RouteSegmentMatch{
-			WorkoutID:    m.WorkoutID,
-			WorkoutName:  m.Workout.Name,
-			UserID:       userID,
-			UserName:     userName,
-			Distance:     m.Distance,
-			Duration:     int(m.Duration.Seconds()),
-			AverageSpeed: m.AverageSpeed(),
-		}
+		response.Matches[i] = NewRouteSegmentMatchResponse(m)
 	}
 
 	return response

@@ -68,13 +68,13 @@ func TestRouteSegment_FindMatches(t *testing.T) {
 	assert.True(t, w2_1.Type.IsLocation())
 	assert.True(t, w2_1.HasTracks())
 
+	bestMatch := rs.Match(w1_1)
+	assert.NotNil(t, bestMatch)
+
 	workouts := []*model.Workout{w1_1, w2_1}
 	matches := rs.FindMatches(workouts)
 
-	if !assert.Len(t, matches, 1) {
-		return
-	}
-
+	assert.Len(t, matches, 7)
 	assert.Len(t, matches[0].Workout.Records, 158)
 }
 

@@ -37,6 +37,7 @@ func NewApInboxController(injector do.Injector) ApInboxController {
 			do.MustInvoke[repository.WorkoutLike](injector),
 			do.MustInvoke[repository.WorkoutReply](injector),
 			do.MustInvoke[repository.APStatus](injector),
+			do.MustInvoke[repository.RouteSegment](injector),
 			do.MustInvoke[service.ActivityPubProfileService](injector),
 		),
 	}

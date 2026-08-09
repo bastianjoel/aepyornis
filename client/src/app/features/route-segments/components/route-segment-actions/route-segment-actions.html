@@ -15,18 +15,33 @@
   <!-- Actions -->
   <div container="body" ngbDropdown>
     <div class="btn-group" role="group">
-      <button
-        class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-        type="button"
-        [disabled]="isProcessing"
-        [title]="'Edit' | translate"
-        (click)="edit()"
-      >
-        <app-icon name="edit" size="16" />
-        @if (!compact()) {
-          <span>{{ 'Edit' | translate }}</span>
-        }
-      </button>
+      @if (routeSegment().can_edit !== false) {
+        <button
+          class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+          type="button"
+          [disabled]="isProcessing"
+          [title]="'Edit' | translate"
+          (click)="edit()"
+        >
+          <app-icon name="edit" size="16" />
+          @if (!compact()) {
+            <span>{{ 'Edit' | translate }}</span>
+          }
+        </button>
+      } @else {
+        <button
+          class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+          type="button"
+          [disabled]="isProcessing"
+          [title]="'Download GPX' | translate"
+          (click)="download()"
+        >
+          <app-icon name="download" size="16" />
+          @if (!compact()) {
+            <span>{{ 'Download GPX' | translate }}</span>
+          }
+        </button>
+      }
 
       <button
         class="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -38,22 +53,24 @@
     </div>
 
     <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-      <button
-        class="dropdown-item d-flex align-items-center gap-2"
-        type="button"
-        (click)="download()"
-      >
-        <app-icon name="download" size="16" />
-        <span>{{ 'Download GPX' | translate }}</span>
-      </button>
-      <button
-        class="dropdown-item d-flex align-items-center gap-2"
-        type="button"
-        (click)="refresh()"
-      >
-        <app-icon name="refresh" size="16" />
-        <span>{{ 'Refresh' | translate }}</span>
-      </button>
+      @if (routeSegment().can_edit !== false) {
+        <button
+          class="dropdown-item d-flex align-items-center gap-2"
+          type="button"
+          (click)="download()"
+        >
+          <app-icon name="download" size="16" />
+          <span>{{ 'Download GPX' | translate }}</span>
+        </button>
+        <button
+          class="dropdown-item d-flex align-items-center gap-2"
+          type="button"
+          (click)="refresh()"
+        >
+          <app-icon name="refresh" size="16" />
+          <span>{{ 'Refresh' | translate }}</span>
+        </button>
+      }
       <button
         class="dropdown-item d-flex align-items-center gap-2"
         type="button"
@@ -62,15 +79,17 @@
         <app-icon name="route-segment" size="16" />
         <span>{{ 'Find matches' | translate }}</span>
       </button>
-      <div class="dropdown-divider"></div>
-      <button
-        class="dropdown-item text-danger d-flex align-items-center gap-2"
-        type="button"
-        (click)="confirmDelete()"
-      >
-        <app-icon name="delete" size="16" />
-        <span>{{ 'Delete' | translate }}</span>
-      </button>
+      @if (routeSegment().can_delete !== false) {
+        <div class="dropdown-divider"></div>
+        <button
+          class="dropdown-item text-danger d-flex align-items-center gap-2"
+          type="button"
+          (click)="confirmDelete()"
+        >
+          <app-icon name="delete" size="16" />
+          <span>{{ 'Delete' | translate }}</span>
+        </button>
+      }
     </div>
   </div>
 

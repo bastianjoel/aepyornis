@@ -44,17 +44,24 @@ type InboxStatusRepository interface {
 	UpsertRemoteWorkoutStatus(actorIRI, actorName, activityID, objectID, content string, activityJSON, payloadJSON []byte) error
 }
 
+type InboxRouteSegmentLikeRepository interface {
+	LikeByActorIRI(routeSegmentID uint64, actorIRI string) error
+	UnlikeByActorIRI(routeSegmentID uint64, actorIRI string) error
+	ResolveRouteSegmentIDByObjectIRI(objectIRI string) (uint64, error)
+}
+
 type InboxProfileService interface {
 	GetByActorIRI(ctx context.Context, actorIRI string) (*model.Profile, error)
 }
 
 type InboxActivityHandler struct {
-	followerRepo     InboxFollowerRepository
-	outboxRepo       InboxOutboxRepository
-	workoutLikeRepo  InboxWorkoutLikeRepository
-	workoutReplyRepo InboxWorkoutReplyRepository
-	statusRepo       InboxStatusRepository
-	profileService   InboxProfileService
+	followerRepo         InboxFollowerRepository
+	outboxRepo           InboxOutboxRepository
+	workoutLikeRepo      InboxWorkoutLikeRepository
+	workoutReplyRepo     InboxWorkoutReplyRepository
+	statusRepo           InboxStatusRepository
+	routeSegmentLikeRepo InboxRouteSegmentLikeRepository
+	profileService       InboxProfileService
 }
 
 func NewInboxActivityHandler(
@@ -63,15 +70,17 @@ func NewInboxActivityHandler(
 	workoutLikeRepo InboxWorkoutLikeRepository,
 	workoutReplyRepo InboxWorkoutReplyRepository,
 	statusRepo InboxStatusRepository,
+	routeSegmentLikeRepo InboxRouteSegmentLikeRepository,
 	profileService InboxProfileService,
 ) *InboxActivityHandler {
 	return &InboxActivityHandler{
-		followerRepo:     followerRepo,
-		outboxRepo:       outboxRepo,
-		workoutLikeRepo:  workoutLikeRepo,
-		workoutReplyRepo: workoutReplyRepo,
-		statusRepo:       statusRepo,
-		profileService:   profileService,
+		followerRepo:         followerRepo,
+		outboxRepo:           outboxRepo,
+		workoutLikeRepo:      workoutLikeRepo,
+		workoutReplyRepo:     workoutReplyRepo,
+		statusRepo:           statusRepo,
+		routeSegmentLikeRepo: routeSegmentLikeRepo,
+		profileService:       profileService,
 	}
 }
 
@@ -163,16 +172,24 @@ func (h *InboxActivityHandler) handleLikeActivity(requestingActor *vocab.Actor, 
 		return nil
 	}
 
+	// Try to resolve as a workout first
 	workoutID, resolveErr := h.outboxRepo.ResolveWorkoutIDByObjectOrActivityID(targetUserID, targetObjectIRI)
-	if resolveErr != nil {
-		if errors.Is(resolveErr, gorm.ErrRecordNotFound) {
-			return nil
-		}
-
+	if resolveErr == nil {
+		return h.workoutLikeRepo.LikeByActorIRI(workoutID, requestingActor.ID.String())
+	}
+	if !errors.Is(resolveErr, gorm.ErrRecordNotFound) {
 		return resolveErr
 	}
 
-	return h.workoutLikeRepo.LikeByActorIRI(workoutID, requestingActor.ID.String())
+	// Fallback: try to resolve as a route segment
+	if h.routeSegmentLikeRepo != nil {
+		rsID, rsErr := h.routeSegmentLikeRepo.ResolveRouteSegmentIDByObjectIRI(targetObjectIRI)
+		if rsErr == nil {
+			return h.routeSegmentLikeRepo.LikeByActorIRI(rsID, requestingActor.ID.String())
+		}
+	}
+
+	return nil
 }
 
 func (h *InboxActivityHandler) handleUndoFollowActivity(requestingActor *vocab.Actor, targetProfileID uint64) error {
@@ -193,16 +210,24 @@ func (h *InboxActivityHandler) handleUndoLikeActivity(requestingActor *vocab.Act
 		return nil
 	}
 
+	// Try to resolve as a workout first
 	workoutID, resolveErr := h.outboxRepo.ResolveWorkoutIDByObjectOrActivityID(targetUserID, targetObjectIRI)
-	if resolveErr != nil {
-		if errors.Is(resolveErr, gorm.ErrRecordNotFound) {
-			return nil
-		}
-
+	if resolveErr == nil {
+		return h.workoutLikeRepo.UnlikeByActorIRI(workoutID, requestingActor.ID.String())
+	}
+	if !errors.Is(resolveErr, gorm.ErrRecordNotFound) {
 		return resolveErr
 	}
 
-	return h.workoutLikeRepo.UnlikeByActorIRI(workoutID, requestingActor.ID.String())
+	// Fallback: try to resolve as a route segment
+	if h.routeSegmentLikeRepo != nil {
+		rsID, rsErr := h.routeSegmentLikeRepo.ResolveRouteSegmentIDByObjectIRI(targetObjectIRI)
+		if rsErr == nil {
+			return h.routeSegmentLikeRepo.UnlikeByActorIRI(rsID, requestingActor.ID.String())
+		}
+	}
+
+	return nil
 }
 
 func actorIRIFromItem(item vocab.Item) string {

@@ -16,14 +16,15 @@ const MaxTotalDistanceFraction = 0.9
 
 // RouteSegmentMatch is a match between a route segment and a workout
 type RouteSegmentMatch struct {
+	ID           uint64        `gorm:"primaryKey;autoIncrement" json:"id"`
 	Workout      *Workout      `json:"workout"`
 	RouteSegment *RouteSegment `json:"routeSegment"`
 
 	first, last WorkoutRecord // The first and last point of the route
 	end         WorkoutRecord // The last point of the workout
 
-	RouteSegmentID uint64        `gorm:"primaryKey" json:"routeSegmentID"` // The ID of the route segment
-	WorkoutID      uint64        `gorm:"primaryKey" json:"workoutID"`      // The ID of the workout
+	RouteSegmentID uint64        `gorm:"not null;index" json:"routeSegmentID"` // The ID of the route segment
+	WorkoutID      uint64        `gorm:"not null;index" json:"workoutID"`      // The ID of the workout
 	FirstID        int           `json:"firstID"`                          // The index of the first point of the route
 	LastID         int           `json:"lastID"`                           // The index of the last point of the route
 	Distance       float64       `json:"distance"`                         // The total distance of the route segment for this workout
@@ -93,8 +94,8 @@ func (rs *RouteSegment) FindMatches(workouts []*Workout) []*RouteSegmentMatch {
 	var result []*RouteSegmentMatch
 
 	for _, w := range workouts {
-		if m := rs.Match(w); m != nil {
-			result = append(result, m)
+		if ms := rs.MatchAll(w); len(ms) > 0 {
+			result = append(result, ms...)
 		}
 	}
 
@@ -102,9 +103,23 @@ func (rs *RouteSegment) FindMatches(workouts []*Workout) []*RouteSegmentMatch {
 }
 
 // Match will find the best match (if any) of the route segment in the workout
-// First calculate all possible starting points, then find the best one that
-// actually matches the segment.
 func (rs *RouteSegment) Match(workout *Workout) *RouteSegmentMatch {
+	matches := rs.MatchAll(workout)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	var best *RouteSegmentMatch
+	for _, m := range matches {
+		if m.IsBetterThan(best) {
+			best = m
+		}
+	}
+	return best
+}
+
+// MatchAll will find all non-overlapping matches of the route segment in the workout
+func (rs *RouteSegment) MatchAll(workout *Workout) []*RouteSegmentMatch {
 	if !workout.Type.IsLocation() {
 		return nil
 	}
@@ -118,13 +133,24 @@ func (rs *RouteSegment) Match(workout *Workout) *RouteSegmentMatch {
 		return nil
 	}
 
-	var bestMatch *RouteSegmentMatch
+	var matches []*RouteSegmentMatch
+	lastMatchedEndIndex := -1
 
 	for _, p := range sp {
+		if p <= lastMatchedEndIndex {
+			continue
+		}
+
 		if last, ok := rs.MatchSegment(workout, p, true); ok {
 			rsm := rs.NewRouteSegmentMatch(workout, p, last)
-			if rsm.MatchesDistance(rs.TotalDistance) && rsm.IsBetterThan(bestMatch) {
-				bestMatch = rsm
+			if rsm.MatchesDistance(rs.TotalDistance) {
+				matches = append(matches, rsm)
+				if last > p {
+					lastMatchedEndIndex = last
+				} else {
+					lastMatchedEndIndex = p
+				}
+				continue
 			}
 		}
 
@@ -134,13 +160,18 @@ func (rs *RouteSegment) Match(workout *Workout) *RouteSegmentMatch {
 
 		if last, ok := rs.MatchSegment(workout, p, false); ok {
 			rsm := rs.NewRouteSegmentMatch(workout, p, last)
-			if rsm.MatchesDistance(rs.TotalDistance) && rsm.IsBetterThan(bestMatch) {
-				bestMatch = rsm
+			if rsm.MatchesDistance(rs.TotalDistance) {
+				matches = append(matches, rsm)
+				if last > p {
+					lastMatchedEndIndex = last
+				} else {
+					lastMatchedEndIndex = p
+				}
 			}
 		}
 	}
 
-	return bestMatch
+	return matches
 }
 
 // MatchSegment starts at a point and continues the workout track while it finds
@@ -218,8 +249,8 @@ func (w *Workout) FindMatches(routeSegments []*RouteSegment) []*RouteSegmentMatc
 	var result []*RouteSegmentMatch
 
 	for _, rs := range routeSegments {
-		if m := rs.Match(w); m != nil {
-			result = append(result, m)
+		if ms := rs.MatchAll(w); len(ms) > 0 {
+			result = append(result, ms...)
 		}
 	}
 

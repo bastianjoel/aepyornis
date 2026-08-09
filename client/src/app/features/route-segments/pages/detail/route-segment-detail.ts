@@ -3,7 +3,8 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@ang
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../../../core/services/api';
-import { RouteSegmentDetail } from '../../../../core/types/route-segment';
+import { RouteSegmentDetail, RouteSegmentMatch } from '../../../../core/types/route-segment';
+import { Profile } from '../../../../core/types/user';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -35,6 +36,22 @@ export class RouteSegmentDetailPage implements OnInit {
   public readonly loading = signal(true);
   public readonly error = signal<string | null>(null);
 
+  // Likes state
+  public readonly likeCount = signal(0);
+  public readonly hasLiked = signal(false);
+  public readonly isLiking = signal(false);
+  public readonly likersModalOpen = signal(false);
+  public readonly likersList = signal<Profile[]>([]);
+
+  // Matches state
+  public readonly matches = signal<RouteSegmentMatch[]>([]);
+  public readonly matchesLoading = signal(false);
+  public readonly matchesPage = signal(1);
+  public readonly matchesPerPage = signal(10);
+  public readonly matchesTotalCount = signal(0);
+  public readonly matchesTotalPages = signal(1);
+  public readonly matchesSort = signal<'best' | 'newest'>('best');
+
   public ngOnInit(): void {
     this.route.params.subscribe((params) => {
       const id = parseInt(params['id']);
@@ -51,8 +68,13 @@ export class RouteSegmentDetailPage implements OnInit {
     try {
       const response = await firstValueFrom(this.api.getRouteSegment(id));
 
-      if (response) {
-        this.routeSegment.set(response.results);
+      if (response && response.results) {
+        const seg = response.results;
+        this.routeSegment.set(seg);
+        this.likeCount.set(seg.like_count || 0);
+        this.hasLiked.set(!!seg.has_liked);
+
+        this.loadMatches(id, 1, this.matchesSort());
       }
     } catch (err) {
       console.error('Failed to load route segment:', err);
@@ -62,8 +84,96 @@ export class RouteSegmentDetailPage implements OnInit {
     }
   }
 
+  public async loadMatches(id: number, page: number, sort: 'best' | 'newest'): Promise<void> {
+    this.matchesLoading.set(true);
+    this.matchesPage.set(page);
+
+    try {
+      const res = await firstValueFrom(
+        this.api.getRouteSegmentMatches(id, { page, per_page: this.matchesPerPage(), sort }),
+      );
+      if (res && res.results) {
+        this.matches.set(res.results);
+        this.matchesTotalCount.set(res.total_count || res.results.length);
+        this.matchesTotalPages.set(res.total_pages || 1);
+      }
+    } catch (err) {
+      console.error('Failed to load matches:', err);
+    } finally {
+      this.matchesLoading.set(false);
+    }
+  }
+
+  public changeMatchesSort(sort: 'best' | 'newest'): void {
+    if (this.matchesSort() === sort) {
+      return;
+    }
+    this.matchesSort.set(sort);
+    const seg = this.routeSegment();
+    if (seg) {
+      this.loadMatches(seg.id, 1, sort);
+    }
+  }
+
+  public changeMatchesPage(page: number): void {
+    if (page < 1 || page > this.matchesTotalPages()) {
+      return;
+    }
+    const seg = this.routeSegment();
+    if (seg) {
+      this.loadMatches(seg.id, page, this.matchesSort());
+    }
+  }
+
+  public toggleLike(): void {
+    const seg = this.routeSegment();
+    if (!seg || this.isLiking()) {
+      return;
+    }
+
+    this.isLiking.set(true);
+    const id = seg.id;
+
+    if (this.hasLiked()) {
+      this.api.unlikeRouteSegment(id).subscribe({
+        next: (res) => {
+          this.hasLiked.set(false);
+          this.likeCount.set(res.results.like_count);
+          this.isLiking.set(false);
+        },
+        error: () => this.isLiking.set(false),
+      });
+    } else {
+      this.api.likeRouteSegment(id).subscribe({
+        next: (res) => {
+          this.hasLiked.set(true);
+          this.likeCount.set(res.results.like_count);
+          this.isLiking.set(false);
+        },
+        error: () => this.isLiking.set(false),
+      });
+    }
+  }
+
+  public openLikersModal(): void {
+    const seg = this.routeSegment();
+    if (!seg) {
+      return;
+    }
+    this.api.getRouteSegmentLikers(seg.id).subscribe({
+      next: (res) => {
+        this.likersList.set(res.results || []);
+        this.likersModalOpen.set(true);
+      },
+      error: (err) => console.error('Failed to fetch likers', err),
+    });
+  }
+
+  public closeLikersModal(): void {
+    this.likersModalOpen.set(false);
+  }
+
   public onRouteSegmentUpdated(): void {
-    // Reload the route segment to get the updated state
     const id = this.route.snapshot.params['id'];
     if (id) {
       this.loadRouteSegment(parseInt(id));
@@ -71,10 +181,13 @@ export class RouteSegmentDetailPage implements OnInit {
   }
 
   public onRouteSegmentDeleted(): void {
-    // Navigation is handled by the actions component
+    // Navigation handled by actions component
   }
 
-  public formatDate(dateString: string): string {
+  public formatDate(dateString?: string): string {
+    if (!dateString) {
+      return '';
+    }
     return new Date(dateString).toLocaleDateString();
   }
 

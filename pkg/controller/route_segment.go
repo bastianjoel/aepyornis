@@ -31,6 +31,10 @@ type RouteSegmentController interface {
 	UpdateRouteSegment(c echo.Context) error
 	DownloadRouteSegment(c echo.Context) error
 	FindRouteSegmentMatches(c echo.Context) error
+	GetRouteSegmentMatches(c echo.Context) error
+	LikeRouteSegment(c echo.Context) error
+	UnlikeRouteSegment(c echo.Context) error
+	GetRouteSegmentLikers(c echo.Context) error
 }
 
 type routeSegmentController struct {
@@ -78,6 +82,19 @@ func (rc *routeSegmentController) getRouteSegment(c echo.Context) (*model.RouteS
 // @Failure      400  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments [get]
+// GetRouteSegments returns a paginated list of route segments
+// @Summary      List route segments
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Produce      json
+// @Param        page      query  int false "Page"
+// @Param        per_page  query  int false "Items per page"
+// @Success      200  {object}  dto.PaginatedResponse[dto.RouteSegmentResponse]
+// @Failure      400  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
+// @Router       /route-segments [get]
 func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 	var pagination dto.PaginationParams
 	if err := c.Bind(&pagination); err != nil {
@@ -85,17 +102,33 @@ func (rc *routeSegmentController) GetRouteSegments(c echo.Context) error {
 	}
 	pagination.SetDefaults()
 
-	totalCount, err := rc.routeSegmentRepo.Count()
+	var profileID uint64
+	var isAdmin bool
+	user := currentUser(c)
+	if user != nil {
+		profileID = user.Profile.ID
+		isAdmin = user.Admin
+	}
+
+	totalCount, err := rc.routeSegmentRepo.Count(profileID, isAdmin)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	routeSegments, err := rc.routeSegmentRepo.List(pagination.PerPage, pagination.GetOffset())
+	routeSegments, err := rc.routeSegmentRepo.List(pagination.PerPage, pagination.GetOffset(), profileID, isAdmin)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
 	results := dto.NewRouteSegmentsResponse(routeSegments)
+	for i, rs := range routeSegments {
+		likeCount, _ := rc.routeSegmentRepo.CountLikes(rs.ID)
+		hasLiked, _ := rc.routeSegmentRepo.HasLiked(rs.ID, profileID)
+		results[i].LikeCount = likeCount
+		results[i].HasLiked = hasLiked
+		results[i].CanEdit = (profileID != 0 && rs.ProfileID == profileID) || isAdmin
+		results[i].CanDelete = (profileID != 0 && rs.ProfileID == profileID) || isAdmin
+	}
 
 	resp := dto.PaginatedResponse[dto.RouteSegmentResponse]{
 		Results:    results,
@@ -125,8 +158,66 @@ func (rc *routeSegmentController) GetRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusNotFound, err)
 	}
 
+	var profileID uint64
+	var isAdmin bool
+	user := currentUser(c)
+	if user != nil {
+		profileID = user.Profile.ID
+		isAdmin = user.Admin
+	}
+
+	if !rc.routeSegmentRepo.CanUserView(rs, profileID, isAdmin) {
+		return renderApiError(c, http.StatusNotFound, errors.New("route segment not found"))
+	}
+
+	detail := dto.NewRouteSegmentDetailResponse(rs)
+	likeCount, _ := rc.routeSegmentRepo.CountLikes(rs.ID)
+	hasLiked, _ := rc.routeSegmentRepo.HasLiked(rs.ID, profileID)
+	detail.LikeCount = likeCount
+	detail.HasLiked = hasLiked
+	detail.CanEdit = (profileID != 0 && rs.ProfileID == profileID) || isAdmin
+	detail.CanDelete = (profileID != 0 && rs.ProfileID == profileID) || isAdmin
+
+	// Compute detailed stats
+	if statsMap, err := rc.routeSegmentRepo.GetStats(rs.ID); err == nil {
+		statsRes := &dto.RouteSegmentStatsResponse{}
+		if te, ok := statsMap["total_efforts"].(int64); ok {
+			statsRes.TotalEfforts = te
+		}
+		if ua, ok := statsMap["unique_athletes"].(int64); ok {
+			statsRes.UniqueAthletes = ua
+		}
+		if ad, ok := statsMap["avg_duration"].(float64); ok {
+			statsRes.AvgDuration = ad
+		}
+		if as, ok := statsMap["avg_distance"].(float64); ok && statsRes.AvgDuration > 0 {
+			statsRes.AvgSpeed = as / statsRes.AvgDuration
+		}
+		if crMatch, ok := statsMap["course_record"].(*model.RouteSegmentMatch); ok && crMatch != nil {
+			var crProfileID uint64
+			crProfileName := ""
+			crWorkoutName := ""
+			if crMatch.Workout != nil {
+				crWorkoutName = crMatch.Workout.Name
+				if crMatch.Workout.Profile != nil {
+					crProfileID = crMatch.Workout.Profile.ID
+					crProfileName = crMatch.Workout.Profile.DisplayName
+				}
+			}
+			statsRes.CourseRecord = &dto.CourseRecordInfo{
+				WorkoutID:   crMatch.WorkoutID,
+				WorkoutName: crWorkoutName,
+				ProfileID:   crProfileID,
+				ProfileName: crProfileName,
+				Duration:    int(crMatch.Duration.Seconds()),
+				Speed:       crMatch.AverageSpeed(),
+			}
+		}
+		detail.Stats = statsRes
+	}
+
 	resp := dto.Response[dto.RouteSegmentDetailResponse]{
-		Results: dto.NewRouteSegmentDetailResponse(rs),
+		Results: detail,
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -156,6 +247,10 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 	errMsg := []string{}
 
 	user := currentUser(c)
+	var profileID uint64
+	if user != nil {
+		profileID = user.Profile.ID
+	}
 
 	segments := []*dto.RouteSegmentResponse{}
 	for _, file := range files {
@@ -167,14 +262,13 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 
 		notes := c.FormValue("notes")
 
-		w, addErr := rc.routeSegmentRepo.CreateFromContent(notes, file.Filename, content)
+		w, addErr := rc.routeSegmentRepo.CreateFromContent(profileID, notes, file.Filename, content)
 		if addErr != nil {
 			errMsg = append(errMsg, addErr.Error())
 			continue
 		}
 
 		if user != nil {
-			w.ProfileID = user.Profile.ID
 			w.Profile = &user.Profile
 		}
 
@@ -268,14 +362,18 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	rs, err := rc.routeSegmentRepo.CreateFromContent("", params.Filename(), content)
+	user := currentUser(c)
+	var profileID uint64
+	if user != nil {
+		profileID = user.Profile.ID
+	}
+
+	rs, err := rc.routeSegmentRepo.CreateFromContent(profileID, "", params.Filename(), content)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
-	user := currentUser(c)
 	if user != nil {
-		rs.ProfileID = user.Profile.ID
 		rs.Profile = &user.Profile
 	}
 	if params.Visibility != "" {
@@ -315,10 +413,38 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments/{id} [delete]
+func canModifyRouteSegment(c echo.Context, rs *model.RouteSegment) bool {
+	user := currentUser(c)
+	if user == nil {
+		return false
+	}
+	if user.Admin {
+		return true
+	}
+	return rs.ProfileID != 0 && rs.ProfileID == user.Profile.ID
+}
+
+// DeleteRouteSegment deletes a route segment
+// @Summary      Delete route segment
+// @Tags         route-segments
+// @Security     ApiKeyAuth
+// @Security     ApiKeyQuery
+// @Security     CookieAuth
+// @Param        id   path  int  true  "Route segment ID"
+// @Produce      json
+// @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      403  {object}  dto.Response[string]
+// @Failure      404  {object}  dto.Response[string]
+// @Failure      500  {object}  dto.Response[string]
+// @Router       /route-segments/{id} [delete]
 func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	if !canModifyRouteSegment(c, rs) {
+		return renderApiError(c, http.StatusForbidden, errors.New("forbidden: you do not have permission to delete this route segment"))
 	}
 
 	if err := rc.routeSegmentRepo.Delete(rs); err != nil {
@@ -341,6 +467,7 @@ func (rc *routeSegmentController) DeleteRouteSegment(c echo.Context) error {
 // @Param        id   path  int  true  "Route segment ID"
 // @Produce      json
 // @Success      200  {object}  dto.Response[map[string]string]
+// @Failure      403  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments/{id}/refresh [post]
@@ -348,6 +475,10 @@ func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	if !canModifyRouteSegment(c, rs) {
+		return renderApiError(c, http.StatusForbidden, errors.New("forbidden: you do not have permission to refresh this route segment"))
 	}
 
 	if err := rs.UpdateFromContent(); err != nil {
@@ -376,6 +507,7 @@ func (rc *routeSegmentController) RefreshRouteSegment(c echo.Context) error {
 // @Produce      json
 // @Success      200  {object}  dto.Response[dto.RouteSegmentDetailResponse]
 // @Failure      400  {object}  dto.Response[string]
+// @Failure      403  {object}  dto.Response[string]
 // @Failure      404  {object}  dto.Response[string]
 // @Failure      500  {object}  dto.Response[string]
 // @Router       /route-segments/{id} [put]
@@ -383,6 +515,10 @@ func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 	rs, err := rc.getRouteSegment(c)
 	if err != nil {
 		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	if !canModifyRouteSegment(c, rs) {
+		return renderApiError(c, http.StatusForbidden, errors.New("forbidden: you do not have permission to update this route segment"))
 	}
 
 	type updateParams struct {
@@ -501,6 +637,110 @@ func (rc *routeSegmentController) FindRouteSegmentMatches(c echo.Context) error 
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func (rc *routeSegmentController) GetRouteSegmentMatches(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	var profileID uint64
+	var isAdmin bool
+	user := currentUser(c)
+	if user != nil {
+		profileID = user.Profile.ID
+		isAdmin = user.Admin
+	}
+
+	if !rc.routeSegmentRepo.CanUserView(rs, profileID, isAdmin) {
+		return renderApiError(c, http.StatusNotFound, errors.New("route segment not found"))
+	}
+
+	var pagination dto.PaginationParams
+	if err := c.Bind(&pagination); err != nil {
+		return renderApiError(c, http.StatusBadRequest, err)
+	}
+	pagination.SetDefaults()
+
+	sort := c.QueryParam("sort")
+	matches, totalCount, err := rc.routeSegmentRepo.GetMatches(rs.ID, sort, pagination.PerPage, pagination.GetOffset())
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	results := make([]dto.RouteSegmentMatch, len(matches))
+	for i, m := range matches {
+		results[i] = dto.NewRouteSegmentMatchResponse(m)
+	}
+
+	resp := dto.PaginatedResponse[dto.RouteSegmentMatch]{
+		Results:    results,
+		Page:       pagination.Page,
+		PerPage:    pagination.PerPage,
+		TotalPages: pagination.CalculateTotalPages(totalCount),
+		TotalCount: totalCount,
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (rc *routeSegmentController) LikeRouteSegment(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	user := currentUser(c)
+	if user == nil {
+		return renderApiError(c, http.StatusUnauthorized, errors.New("unauthorized"))
+	}
+
+	if err := rc.routeSegmentRepo.Like(rs.ID, user.Profile.ID); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	count, _ := rc.routeSegmentRepo.CountLikes(rs.ID)
+	return c.JSON(http.StatusOK, dto.Response[map[string]interface{}]{
+		Results: map[string]interface{}{"liked": true, "like_count": count},
+	})
+}
+
+func (rc *routeSegmentController) UnlikeRouteSegment(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	user := currentUser(c)
+	if user == nil {
+		return renderApiError(c, http.StatusUnauthorized, errors.New("unauthorized"))
+	}
+
+	if err := rc.routeSegmentRepo.Unlike(rs.ID, user.Profile.ID); err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	count, _ := rc.routeSegmentRepo.CountLikes(rs.ID)
+	return c.JSON(http.StatusOK, dto.Response[map[string]interface{}]{
+		Results: map[string]interface{}{"liked": false, "like_count": count},
+	})
+}
+
+func (rc *routeSegmentController) GetRouteSegmentLikers(c echo.Context) error {
+	rs, err := rc.getRouteSegment(c)
+	if err != nil {
+		return renderApiError(c, http.StatusNotFound, err)
+	}
+
+	likers, err := rc.routeSegmentRepo.GetLikers(rs.ID)
+	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	return c.JSON(http.StatusOK, dto.Response[[]*model.Profile]{
+		Results: likers,
+	})
 }
 
 func uploadedRouteSegmentFile(file *multipart.FileHeader) ([]byte, error) {
