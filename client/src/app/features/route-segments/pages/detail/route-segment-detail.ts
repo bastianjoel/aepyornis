@@ -8,6 +8,7 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouteSegmentMapComponent } from '../../components/route-segment-map/route-segment-map';
+import { getMetricDef } from '../../../../core/config/metrics';
 
 @Component({
   selector: 'app-route-segment-detail',
@@ -22,6 +23,7 @@ import { RouteSegmentMapComponent } from '../../components/route-segment-map/rou
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RouteSegmentDetailPage implements OnInit {
+  public readonly getMetricDef = getMetricDef;
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -100,6 +102,29 @@ export class RouteSegmentDetailPage implements OnInit {
     const minutes = Math.floor(tempoSecondsPerKm / 60);
     const seconds = Math.floor(tempoSecondsPerKm % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  public onDownloadFile(): void {
+    const segment = this.routeSegment();
+    if (!segment) {
+      return;
+    }
+
+    this.api.downloadRouteSegment(segment.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = segment.filename || `route_segment_${segment.id}.gpx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      },
+      error: (err) => {
+        console.error('Failed to download route segment file:', err);
+      },
+    });
   }
 
   public goBack(): void {
