@@ -43,76 +43,106 @@
         <!-- Workout Stats -->
         <div class="workout-stats">
           @if (dataService.workout()!.total_distance) {
-            <div class="stat-card">
-              <div class="stat-label">{{ 'Distance' | translate }}</div>
-              <div class="stat-value d-flex align-items-center gap-2">
+            <div class="stat-card d-flex align-items-center gap-3 p-3">
+              <div
+                class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center"
+              >
                 <app-icon
-                  size="22"
+                  size="24"
                   [class]="getMetricDef('distance').colorClass"
                   [name]="getMetricDef('distance').icon"
                 />
-                <span>{{ dataService.workout()!.total_distance! | formatDistance }}</span>
+              </div>
+              <div>
+                <div class="fs-4 fw-bold text-body lh-1">
+                  {{ dataService.workout()!.total_distance! | formatDistance }}
+                </div>
+                <div class="small text-body-secondary mt-1">{{ 'Distance' | translate }}</div>
               </div>
             </div>
           }
 
           @if (dataService.workout()!.total_duration) {
-            <div class="stat-card">
-              <div class="stat-label">{{ 'Duration' | translate }}</div>
-              <div class="stat-value d-flex align-items-center gap-2">
+            <div class="stat-card d-flex align-items-center gap-3 p-3">
+              <div
+                class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center"
+              >
                 <app-icon
-                  size="22"
+                  size="24"
                   [class]="getMetricDef('duration').colorClass"
                   [name]="getMetricDef('duration').icon"
                 />
-                <span>{{ dataService.workout()!.total_duration! | formatDuration }}</span>
+              </div>
+              <div>
+                <div class="fs-4 fw-bold text-body lh-1">
+                  {{ dataService.workout()!.total_duration! | formatDuration }}
+                </div>
+                <div class="small text-body-secondary mt-1">{{ 'Duration' | translate }}</div>
               </div>
             </div>
           }
 
           @if (dataService.workout()!.average_speed_no_pause) {
-            <div class="stat-card">
-              <div class="stat-label">
-                {{ averageSpeedLabel(dataService.workout()!.type) | translate }}
-              </div>
-              <div class="stat-value d-flex align-items-center gap-2">
+            <div class="stat-card d-flex align-items-center gap-3 p-3">
+              <div
+                class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center"
+              >
                 <app-icon
-                  size="22"
+                  size="24"
                   [class]="getMetricDef('speed').colorClass"
                   [name]="getMetricDef('speed').icon"
                 />
-                <span>{{
-                  dataService.workout()!.average_speed_no_pause!
-                    | formatSpeed: dataService.workout()!.type
-                }}</span>
+              </div>
+              <div>
+                <div class="fs-4 fw-bold text-body lh-1">
+                  {{
+                    dataService.workout()!.average_speed_no_pause!
+                      | formatSpeed: dataService.workout()!.type
+                  }}
+                </div>
+                <div class="small text-body-secondary mt-1">
+                  {{ averageSpeedLabel(dataService.workout()!.type) | translate }}
+                </div>
               </div>
             </div>
           }
 
           @if (dataService.workout()!.total_repetitions) {
-            <div class="stat-card">
-              <div class="stat-label">{{ 'Repetitions' | translate }}</div>
-              <div class="stat-value d-flex align-items-center gap-2">
+            <div class="stat-card d-flex align-items-center gap-3 p-3">
+              <div
+                class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center"
+              >
                 <app-icon
-                  size="22"
+                  size="24"
                   [class]="getMetricDef('repetitions').colorClass"
                   [name]="getMetricDef('repetitions').icon"
                 />
-                <span>{{ dataService.workout()!.total_repetitions! }}</span>
+              </div>
+              <div>
+                <div class="fs-4 fw-bold text-body lh-1">
+                  {{ dataService.workout()!.total_repetitions! }}
+                </div>
+                <div class="small text-body-secondary mt-1">{{ 'Repetitions' | translate }}</div>
               </div>
             </div>
           }
 
           @if (dataService.workout()!.total_weight) {
-            <div class="stat-card">
-              <div class="stat-label">{{ 'Weight' | translate }}</div>
-              <div class="stat-value d-flex align-items-center gap-2">
+            <div class="stat-card d-flex align-items-center gap-3 p-3">
+              <div
+                class="rounded-3 p-2 bg-body-tertiary d-flex align-items-center justify-content-center"
+              >
                 <app-icon
-                  size="22"
+                  size="24"
                   [class]="getMetricDef('weight').colorClass"
                   [name]="getMetricDef('weight').icon"
                 />
-                <span>{{ dataService.workout()!.total_weight! }}</span>
+              </div>
+              <div>
+                <div class="fs-4 fw-bold text-body lh-1">
+                  {{ dataService.workout()!.total_weight! }}
+                </div>
+                <div class="small text-body-secondary mt-1">{{ 'Weight' | translate }}</div>
               </div>
             </div>
           }
