@@ -183,6 +183,227 @@ var workoutTypeConfigs = map[WorkoutType]WorkoutTypeConfiguration{
 	WorkoutTypeWinterSport:           {Location: true, Distance: true, Repetition: false, Weight: false},
 }
 
+var workoutSubTypesByType = map[WorkoutType][]string{
+	WorkoutTypeAll: {},
+	WorkoutTypeAlpineSkiing: {
+		"backcountry",
+		"resort",
+	},
+	WorkoutTypeAmericanFootball: {},
+	WorkoutTypeArchery:          {},
+	WorkoutTypeBaseball:         {},
+	WorkoutTypeBasketball:       {},
+	WorkoutTypeBoating:          {},
+	WorkoutTypeBoxing:           {},
+	WorkoutTypeCanoeing:         {},
+	WorkoutTypeCricket:          {},
+	WorkoutTypeCrossCountrySkiing: {
+		"skate_skiing",
+	},
+	WorkoutTypeCycling: {
+		"bmx",
+		"commuting",
+		"cyclocross",
+		"downhill",
+		"e_bike_enduro",
+		"e_bike_mountain",
+		"enduro",
+		"gravel_cycling",
+		"hand_cycling",
+		"indoor_cycling",
+		"mixed_surface",
+		"mountain",
+		"recumbent",
+		"road",
+		"spin",
+		"track_cycling",
+	},
+	WorkoutTypeDance:    {},
+	WorkoutTypeDiscGolf: {},
+	WorkoutTypeDiving: {
+		"apnea_diving",
+		"apnea_hunting",
+		"ccr_diving",
+		"gauge_diving",
+		"multi_gas_diving",
+		"single_gas_diving",
+	},
+	WorkoutTypeDriving: {},
+	WorkoutTypeEBiking: {
+		"e_bike_fitness",
+	},
+	WorkoutTypeExpedition: {},
+	WorkoutTypeFishing:    {},
+	WorkoutTypeFitnessEquipment: {
+		"elliptical",
+		"indoor_grinding",
+		"indoor_rowing",
+		"indoor_skiing",
+		"pilates",
+		"stair_climbing",
+	},
+	WorkoutTypeFloorClimbing: {},
+	WorkoutTypeFlying: {
+		"fly_altimeter",
+		"fly_canopy",
+		"fly_ifr",
+		"fly_navigate",
+		"fly_paraglide",
+		"fly_paramotor",
+		"fly_pressurized",
+		"fly_timer",
+		"fly_vfr",
+		"fly_wx",
+		"rc_drone",
+		"wingsuit",
+	},
+	WorkoutTypeGeneric:     {},
+	WorkoutTypeGeocaching:  {},
+	WorkoutTypeGolf:        {},
+	WorkoutTypeGrinding:    {},
+	WorkoutTypeHangGliding: {},
+	WorkoutTypeHiit: {
+		"amrap",
+		"emom",
+		"hiit_generic",
+		"tabata",
+	},
+	WorkoutTypeHiking: {
+		"rucking",
+	},
+	WorkoutTypeHockey: {
+		"field",
+		"ice",
+	},
+	WorkoutTypeHorsebackRiding: {},
+	WorkoutTypeHunting: {
+		"hunting_with_dogs",
+	},
+	WorkoutTypeIceSkating:        {},
+	WorkoutTypeIndoorHandCycling: {},
+	WorkoutTypeInlineSkating:     {},
+	WorkoutTypeJumpRope:          {},
+	WorkoutTypeJumpmaster:        {},
+	WorkoutTypeKayaking: {
+		"whitewater",
+	},
+	WorkoutTypeKitesurfing:      {},
+	WorkoutTypeLacrosse:         {},
+	WorkoutTypeMeditation:       {},
+	WorkoutTypeMixedMartialArts: {},
+	WorkoutTypeMobility:         {},
+	WorkoutTypeMotorSports: {
+		"rally",
+	},
+	WorkoutTypeMotorcycling: {
+		"atv",
+		"motocross",
+	},
+	WorkoutTypeMountaineering: {},
+	WorkoutTypeMultisport: {
+		"adventure_race",
+		"brick",
+		"duathlon",
+		"pool_triathlon",
+		"swim_run",
+		"triathlon",
+	},
+	WorkoutTypeObstacle:  {},
+	WorkoutTypeOverland:  {},
+	WorkoutTypePaddling:  {},
+	WorkoutTypeParaSport: {},
+	WorkoutTypeRacket: {
+		"badminton",
+		"padel",
+		"pickleball",
+		"racquetball",
+		"squash",
+		"table_tennis",
+	},
+	WorkoutTypeRafting: {
+		"whitewater",
+	},
+	WorkoutTypeRockClimbing: {
+		"bouldering",
+		"indoor_climbing",
+	},
+	WorkoutTypeRowing: {},
+	WorkoutTypeRugby:  {},
+	WorkoutTypeRunning: {
+		"indoor_running",
+		"street",
+		"track",
+		"trail",
+		"treadmill",
+	},
+	WorkoutTypeSailing: {
+		"indoor_grinding",
+		"sail_race",
+	},
+	WorkoutTypeShooting:   {},
+	WorkoutTypeSkyDiving:  {},
+	WorkoutTypeSnorkeling: {},
+	WorkoutTypeSnowboarding: {
+		"backcountry",
+		"resort",
+	},
+	WorkoutTypeSnowmobiling:          {},
+	WorkoutTypeSnowshoeing:           {},
+	WorkoutTypeSoccer:                {},
+	WorkoutTypeStandUpPaddleboarding: {},
+	WorkoutTypeSurfing:               {},
+	WorkoutTypeSwimming: {
+		"dynamic_apnea",
+		"lap_swimming",
+		"open_water",
+		"pool_apnea",
+	},
+	WorkoutTypeTactical:  {},
+	WorkoutTypeTeamSport: {},
+	WorkoutTypeTennis: {
+		"challenge",
+		"exercise",
+		"match",
+		"platform",
+		"warm_up",
+	},
+	WorkoutTypeTraining: {
+		"breathing",
+		"cardio_training",
+		"flexibility_training",
+		"mobility",
+		"strength_training",
+		"yoga",
+	},
+	WorkoutTypeTransition: {
+		"bike_to_run_transition",
+		"run_to_bike_transition",
+		"swim_to_bike_transition",
+	},
+	WorkoutTypeTrollingMotor: {},
+	WorkoutTypeUltra:         {},
+	WorkoutTypeVideoGaming: {
+		"esport",
+	},
+	WorkoutTypeVirtualActivity: {},
+	WorkoutTypeVolleyball:      {},
+	WorkoutTypeWakeboarding:    {},
+	WorkoutTypeWakesurfing:     {},
+	WorkoutTypeWalking: {
+		"casual_walking",
+		"indoor_walking",
+		"indoor_wheelchair_walk",
+		"speed_walking",
+	},
+	WorkoutTypeWaterSkiing:        {},
+	WorkoutTypeWaterSport:         {},
+	WorkoutTypeWaterTubing:        {},
+	WorkoutTypeWheelchairPushRun:  {},
+	WorkoutTypeWheelchairPushWalk: {},
+	WorkoutTypeWindsurfing:        {},
+	WorkoutTypeWinterSport:        {},
+}
+
 func ParseWorkoutType(s string) (WorkoutType, bool) {
 	switch WorkoutType(s) {
 	case WorkoutTypeAll:
@@ -364,4 +585,33 @@ func ParseWorkoutType(s string) (WorkoutType, bool) {
 	default:
 		return WorkoutTypeUnknown, false
 	}
+}
+
+func IsValidWorkoutSubType(subType string) bool {
+	if subType == "" {
+		return true
+	}
+	for _, subs := range workoutSubTypesByType {
+		for _, s := range subs {
+			if s == subType {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func IsValidWorkoutSubTypeForCategory(category WorkoutType, subType string) bool {
+	if subType == "" {
+		return true
+	}
+	if subs, ok := workoutSubTypesByType[category]; ok && len(subs) > 0 {
+		for _, s := range subs {
+			if s == subType {
+				return true
+			}
+		}
+		return false
+	}
+	return IsValidWorkoutSubType(subType)
 }

@@ -15,17 +15,18 @@
   <!-- Actions -->
   <div container="body" ngbDropdown>
     <div class="btn-group" role="group">
-      @if (!compact()) {
-        <button
-          class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-          type="button"
-          [disabled]="isProcessing"
-          (click)="edit()"
-        >
-          <app-icon name="edit" size="16" />
+      <button
+        class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+        type="button"
+        [disabled]="isProcessing"
+        [title]="'Edit' | translate"
+        (click)="edit()"
+      >
+        <app-icon name="edit" size="16" />
+        @if (!compact()) {
           <span>{{ 'Edit' | translate }}</span>
-        </button>
-      }
+        }
+      </button>
 
       <button
         class="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -33,29 +34,31 @@
         type="button"
         [disabled]="isProcessing"
         [title]="'Actions' | translate"
-      >
-        @if (compact()) {
-          <app-icon name="options" size="16" />
-        }
-      </button>
+      ></button>
     </div>
 
     <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-      @if (compact()) {
-        <button class="dropdown-item d-flex align-items-center gap-2" type="button" (click)="edit()">
-          <app-icon name="edit" size="16" />
-          <span>{{ 'Edit' | translate }}</span>
-        </button>
-      }
-      <button class="dropdown-item d-flex align-items-center gap-2" type="button" (click)="download()">
+      <button
+        class="dropdown-item d-flex align-items-center gap-2"
+        type="button"
+        (click)="download()"
+      >
         <app-icon name="download" size="16" />
         <span>{{ 'Download GPX' | translate }}</span>
       </button>
-      <button class="dropdown-item d-flex align-items-center gap-2" type="button" (click)="refresh()">
+      <button
+        class="dropdown-item d-flex align-items-center gap-2"
+        type="button"
+        (click)="refresh()"
+      >
         <app-icon name="refresh" size="16" />
         <span>{{ 'Refresh' | translate }}</span>
       </button>
-      <button class="dropdown-item d-flex align-items-center gap-2" type="button" (click)="findMatches()">
+      <button
+        class="dropdown-item d-flex align-items-center gap-2"
+        type="button"
+        (click)="findMatches()"
+      >
         <app-icon name="route-segment" size="16" />
         <span>{{ 'Find matches' | translate }}</span>
       </button>

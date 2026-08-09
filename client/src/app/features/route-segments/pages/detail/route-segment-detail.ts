@@ -8,6 +8,7 @@ import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouteSegmentMapComponent } from '../../components/route-segment-map/route-segment-map';
+import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport-labels';
 import { getMetricDef } from '../../../../core/config/metrics';
 
 @Component({
@@ -24,6 +25,8 @@ import { getMetricDef } from '../../../../core/config/metrics';
 })
 export class RouteSegmentDetailPage implements OnInit {
   public readonly getMetricDef = getMetricDef;
+  public readonly sportLabel = getSportLabel;
+  public readonly sportSubtypeLabel = getSportSubtypeLabel;
   private api = inject(Api);
   private route = inject(ActivatedRoute);
   private router = inject(Router);

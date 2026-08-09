@@ -25,7 +25,7 @@
             {{ routeSegment()!.name || ('(no name)' | translate) }}
           </h1>
 
-          <div class="d-flex gap-2">
+          <div class="d-flex gap-2 flex-wrap align-items-center mt-2 mt-sm-0">
             @if (routeSegment()!.bidirectional) {
               <span
                 class="badge text-bg-info-subtle text-info border border-info-subtle rounded-pill d-inline-flex align-items-center gap-1 px-3 py-2"
@@ -45,12 +45,21 @@
           </div>
         </div>
 
-        @if (routeSegment()!.address_string) {
-          <p class="text-body-secondary mb-0 mt-2 d-flex align-items-center gap-1">
-            <app-icon name="location" size="16" />
-            {{ routeSegment()!.address_string }}
-          </p>
-        }
+        <div class="d-flex align-items-center flex-wrap gap-3 mt-2">
+          @if (routeSegment()!.profile_name) {
+            <span class="text-body-secondary small d-flex align-items-center gap-1">
+              <app-icon name="user" size="14" />
+              {{ 'Owner' | translate }}:
+              <strong class="text-body">{{ routeSegment()!.profile_name }}</strong>
+            </span>
+          }
+          @if (routeSegment()!.address_string) {
+            <span class="text-body-secondary small d-flex align-items-center gap-1">
+              <app-icon name="location" size="14" />
+              {{ routeSegment()!.address_string }}
+            </span>
+          }
+        </div>
       </div>
 
       <app-route-segment-actions
@@ -161,6 +170,59 @@
           </div>
           <div class="card-body p-0">
             <ul class="list-group list-group-flush rounded-bottom-3">
+              @if (routeSegment()!.profile_name) {
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <span class="text-body-secondary d-flex align-items-center gap-2">
+                    <app-icon name="user" size="16" />
+                    {{ 'Owner' | translate }}
+                  </span>
+                  <span class="fw-medium text-body">{{ routeSegment()!.profile_name }}</span>
+                </li>
+              }
+              @if (routeSegment()!.category) {
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <span class="text-body-secondary d-flex align-items-center gap-2">
+                    <app-icon name="route-segment" size="16" />
+                    {{ 'Category' | translate }}
+                  </span>
+                  <span class="fw-medium text-body">
+                    {{ sportLabel(routeSegment()!.category) | translate }}
+                    @if (routeSegment()!.sub_category) {
+                      ({{ sportSubtypeLabel(routeSegment()!.sub_category) | translate }})
+                    }
+                  </span>
+                </li>
+              }
+              @if (routeSegment()!.visibility) {
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <span class="text-body-secondary d-flex align-items-center gap-2">
+                    <app-icon name="user" size="16" />
+                    {{ 'Visibility' | translate }}
+                  </span>
+                  <span class="fw-medium text-body text-capitalize">{{
+                    routeSegment()!.visibility | translate
+                  }}</span>
+                </li>
+              }
+              @if (routeSegment()!.difficulty) {
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <span class="text-body-secondary d-flex align-items-center gap-2">
+                    <app-icon name="up" size="16" />
+                    {{ 'Difficulty' | translate }}
+                  </span>
+                  <span class="fw-medium text-body text-capitalize">{{
+                    routeSegment()!.difficulty | translate
+                  }}</span>
+                </li>
+              }
               @if (routeSegment()!.filename) {
                 <li
                   class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
@@ -209,6 +271,17 @@
             </ul>
           </div>
         </div>
+
+        @if (routeSegment()!.description) {
+          <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header">
+              <h5 class="mb-0">{{ 'Description' | translate }}</h5>
+            </div>
+            <div class="card-body">
+              <p class="card-text text-body text-break mb-0">{{ routeSegment()!.description }}</p>
+            </div>
+          </div>
+        }
 
         @if (routeSegment()!.notes) {
           <div class="card border-0 shadow-sm rounded-3">

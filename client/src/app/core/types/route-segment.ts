@@ -2,10 +2,19 @@
  * Route segment domain models
  */
 
+export type RouteSegmentDifficulty = 'easy' | 'moderate' | 'difficult' | '';
+
 export type RouteSegment = {
   id: number;
+  profile_id: number;
+  profile_name?: string;
   name: string;
   notes?: string;
+  category?: string;
+  sub_category?: string;
+  visibility: 'public' | 'followers' | '' | 'private';
+  description?: string;
+  difficulty?: RouteSegmentDifficulty;
   filename: string;
   total_distance: number;
   min_elevation: number;

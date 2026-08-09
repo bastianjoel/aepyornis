@@ -12,6 +12,8 @@ import { PaginatedListView } from '../../../../core/components/paginated-list-vi
 import { RouteSegmentActionsComponent } from '../../../route-segments/components/route-segment-actions/route-segment-actions';
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { getSportLabel } from '../../../../core/i18n/sport-labels';
+
 @Component({
   selector: 'app-route-segments',
   imports: [RouterLink, AppIcon, RouteSegmentActionsComponent, TranslatePipe, BaseList],
@@ -21,6 +23,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 export class RouteSegments extends PaginatedListView<RouteSegment> {
   private api = inject(Api);
   private router = inject(Router);
+
+  public readonly sportLabel = getSportLabel;
 
   // Alias for better template readability
   public routeSegments = this.items;

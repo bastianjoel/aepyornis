@@ -28,7 +28,7 @@ func NewRouteSegment(injector do.Injector) (RouteSegment, error) {
 
 func (r *routeSegmentRepository) GetByID(id uint64) (*model.RouteSegment, error) {
 	var routeSegment model.RouteSegment
-	if err := r.db.Preload("RouteSegmentMatches.Workout.Profile").First(&routeSegment, id).Error; err != nil {
+	if err := r.db.Preload("Profile").Preload("RouteSegmentMatches.Workout.Profile").First(&routeSegment, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -50,7 +50,7 @@ func (r *routeSegmentRepository) Count() (int64, error) {
 
 func (r *routeSegmentRepository) List(limit int, offset int) ([]*model.RouteSegment, error) {
 	var routeSegments []*model.RouteSegment
-	q := r.db.Preload("RouteSegmentMatches").Order("created_at DESC")
+	q := r.db.Preload("Profile").Preload("RouteSegmentMatches").Order("created_at DESC")
 	if limit > 0 {
 		q = q.Limit(limit)
 	}

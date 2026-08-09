@@ -89,6 +89,82 @@
                 </small>
               </div>
 
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label" for="category">{{ 'Category' | translate }}</label>
+                  <select
+                    class="form-select"
+                    id="category"
+                    [value]="category()"
+                    (change)="updateCategory($any($event.target).value)"
+                  >
+                    <option value="">{{ 'Not specified' | translate }}</option>
+                    @for (t of availableTypes(); track t) {
+                      <option [value]="t">{{ sportLabel(t) | translate }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label" for="sub_category">{{
+                    'Sub category' | translate
+                  }}</label>
+                  <select
+                    class="form-select"
+                    id="sub_category"
+                    [disabled]="!availableSubTypes().length"
+                    [value]="subCategory()"
+                    (change)="subCategory.set($any($event.target).value)"
+                  >
+                    <option value="">{{ 'Not specified' | translate }}</option>
+                    @for (st of availableSubTypes(); track st) {
+                      <option [value]="st">{{ sportSubtypeLabel(st) | translate }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label" for="visibility">{{ 'Visibility' | translate }}</label>
+                  <select
+                    class="form-select"
+                    id="visibility"
+                    [value]="visibility()"
+                    (change)="visibility.set($any($event.target).value)"
+                  >
+                    <option value="public">{{ 'Public' | translate }}</option>
+                    <option value="followers">{{ 'Followers' | translate }}</option>
+                    <option value="private">{{ 'Private' | translate }}</option>
+                  </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label" for="difficulty">{{ 'Difficulty' | translate }}</label>
+                  <select
+                    class="form-select"
+                    id="difficulty"
+                    [value]="difficulty()"
+                    (change)="difficulty.set($any($event.target).value)"
+                  >
+                    <option value="">{{ 'Not specified' | translate }}</option>
+                    <option value="easy">{{ 'Easy' | translate }}</option>
+                    <option value="moderate">{{ 'Moderate' | translate }}</option>
+                    <option value="difficult">{{ 'Difficult' | translate }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label" for="description">{{ 'Description' | translate }}</label>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  rows="2"
+                  [placeholder]="'Optional detailed description' | translate"
+                  [value]="description()"
+                  (input)="description.set($any($event.target).value)"
+                ></textarea>
+              </div>
+
               <div class="mb-3">
                 <div class="form-check">
                   <input

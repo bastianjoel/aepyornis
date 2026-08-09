@@ -29,10 +29,6 @@
                 <app-icon name="route-segment" size="24" />
                 <div>
                   <strong>{{ segment.name || '(no name)' }}</strong>
-                  @if (segment.notes) {
-                    <br />
-                    <small class="text-muted">{{ segment.notes.substring(0, 50) }}...</small>
-                  }
                   @if (segment.bidirectional) {
                     <br />
                     <small class="text-muted">

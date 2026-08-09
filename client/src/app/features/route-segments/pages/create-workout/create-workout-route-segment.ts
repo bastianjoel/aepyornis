@@ -15,6 +15,8 @@ import { WorkoutDetail } from '../../../../core/types/workout';
 import { AppIcon } from '../../../../core/components/app-icon/app-icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RouteSegmentMapComponent } from '../../components/route-segment-map/route-segment-map';
+import { WORKOUT_SUB_TYPES_BY_TYPE, WORKOUT_TYPES } from '../../../../core/types/workout-types';
+import { getSportLabel, getSportSubtypeLabel } from '../../../../core/i18n/sport-labels';
 
 @Component({
   selector: 'app-create-workout-route-segment',
@@ -37,8 +39,27 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   public readonly name = signal('');
   public readonly start = signal(1); // 1-based for UI
   public readonly end = signal(1); // 1-based for UI
+  public readonly category = signal('');
+  public readonly subCategory = signal('');
+  public readonly visibility = signal<'public' | 'followers' | '' | 'private'>('public');
+  public readonly difficulty = signal<'easy' | 'moderate' | 'difficult' | ''>('');
+  public readonly description = signal('');
   public readonly bidirectional = signal(false);
   public readonly circular = signal(false);
+
+  public readonly availableTypes = signal<string[]>([]);
+  public readonly subTypesByType = signal<Record<string, string[]>>({});
+
+  public readonly availableSubTypes = computed(() => {
+    const cat = this.category();
+    if (!cat) {
+      return [];
+    }
+    return this.subTypesByType()[cat] || [];
+  });
+
+  public readonly sportLabel = getSportLabel;
+  public readonly sportSubtypeLabel = getSportSubtypeLabel;
 
   // Computed values
   public readonly totalPoints = computed(() => {
@@ -91,12 +112,56 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
   });
 
   public ngOnInit(): void {
+    this.loadFilterOptions();
+
     this.route.params.subscribe((params) => {
       const id = parseInt(params['id']);
       if (id) {
         this.loadWorkout(id);
       }
     });
+  }
+
+  public updateCategory(val: string): void {
+    this.category.set(val);
+    const available = this.availableSubTypes();
+    if (this.subCategory() && available.length > 0 && !available.includes(this.subCategory())) {
+      this.subCategory.set('');
+    }
+  }
+
+  private async loadFilterOptions(): Promise<void> {
+    const typesSet = new Set<string>();
+    WORKOUT_TYPES.forEach((t) => {
+      if (t.value !== 'all' && t.value !== 'auto') {
+        typesSet.add(t.value);
+      }
+    });
+
+    const subTypesMap: Record<string, string[]> = {};
+    Object.entries(WORKOUT_SUB_TYPES_BY_TYPE).forEach(([type, subs]) => {
+      subTypesMap[type] = [...subs];
+    });
+
+    try {
+      const res = await firstValueFrom(this.api.getWorkoutFilterOptions());
+      if (res?.results) {
+        if (res.results.types?.length) {
+          res.results.types.forEach((t) => typesSet.add(t));
+        }
+        if (res.results.sub_types_by_type) {
+          Object.entries(res.results.sub_types_by_type).forEach(([type, subs]) => {
+            const merged = new Set([...(subTypesMap[type] || []), ...subs]);
+            subTypesMap[type] = Array.from(merged);
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load filter options:', err);
+    }
+
+    this.availableTypes.set(Array.from(typesSet));
+    this.subTypesByType.set(subTypesMap);
   }
 
   public async loadWorkout(id: number): Promise<void> {
@@ -110,6 +175,9 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
         const workout = response.results;
         this.workout.set(workout);
         this.name.set(workout.name);
+        if (workout.type) {
+          this.updateCategory(workout.type);
+        }
 
         // Set end to the last point
         const points = workout.records?.details?.position?.length || 1;
@@ -155,6 +223,11 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
           name: this.name(),
           start: this.start(),
           end: this.end(),
+          category: this.category(),
+          sub_category: this.subCategory(),
+          visibility: this.visibility(),
+          difficulty: this.difficulty(),
+          description: this.description(),
         }),
       );
       const created = response?.results;
@@ -169,6 +242,11 @@ export class CreateWorkoutRouteSegmentPage implements OnInit {
           this.api.updateRouteSegment(created.id, {
             name: created.name ?? this.name(),
             notes: created.notes ?? '',
+            category: this.category(),
+            sub_category: this.subCategory(),
+            visibility: this.visibility(),
+            difficulty: this.difficulty(),
+            description: this.description(),
             bidirectional: this.bidirectional(),
             circular: this.circular(),
           }),

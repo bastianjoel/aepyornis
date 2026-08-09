@@ -12,10 +12,31 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+type RouteSegmentDifficulty string
+
+const (
+	RouteSegmentDifficultyEasy      RouteSegmentDifficulty = "easy"
+	RouteSegmentDifficultyModerate  RouteSegmentDifficulty = "moderate"
+	RouteSegmentDifficultyDifficult RouteSegmentDifficulty = "difficult"
+)
+
+func (d RouteSegmentDifficulty) IsValid() bool {
+	switch d {
+	case "", RouteSegmentDifficultyEasy, RouteSegmentDifficultyModerate, RouteSegmentDifficultyDifficult:
+		return true
+	}
+	return false
+}
+
 type RoutSegmentCreationParams struct {
-	Name  string `form:"name"`
-	Start int    `form:"start"`
-	End   int    `form:"end"`
+	Name        string                 `form:"name" json:"name"`
+	Start       int                    `form:"start" json:"start"`
+	End         int                    `form:"end" json:"end"`
+	Category    string                 `form:"category" json:"category"`
+	SubCategory string                 `form:"sub_category" json:"sub_category"`
+	Visibility  WorkoutVisibility      `form:"visibility" json:"visibility"`
+	Description string                 `form:"description" json:"description"`
+	Difficulty  RouteSegmentDifficulty `form:"difficulty" json:"difficulty"`
 }
 
 func (rscp *RoutSegmentCreationParams) Filename() string {
@@ -32,6 +53,14 @@ func (rscp *RoutSegmentCreationParams) Filename() string {
 
 type RouteSegment struct {
 	Model
+	ProfileID   uint64                 `gorm:"not null;index" json:"profile_id"` // Owner of the route segment
+	Profile     *Profile               `json:"profile,omitempty"`
+	Category    string                 `json:"category"`                                    // Workout type this is intended for
+	SubCategory string                 `json:"sub_category"`                                // Optional subtype
+	Visibility  WorkoutVisibility      `gorm:"not null;default:'public'" json:"visibility"` // Public, followers, private
+	Description string                 `json:"description"`                                 // Description of the route segment
+	Difficulty  RouteSegmentDifficulty `json:"difficulty"`                                  // easy, moderate, difficult
+
 	GeoAddress    *geo.Address `gorm:"serializer:json" json:"geoAddress"` // The address of the workout
 	Name          string       `gorm:"not null" json:"name"`              // The name of the workout
 	Notes         string       `json:"notes"`                             // The notes associated with the workout, in markdown
@@ -68,9 +97,10 @@ func NewRouteSegment(notes string, filename string, content []byte) (*RouteSegme
 	h.Write(content)
 
 	rs := &RouteSegment{
-		Name:  name,
-		Notes: notes,
-		Dirty: true,
+		Name:       name,
+		Notes:      notes,
+		Visibility: WorkoutVisibilityPublic,
+		Dirty:      true,
 
 		Content:  content,
 		Checksum: h.Sum(nil),

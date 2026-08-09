@@ -32,7 +32,11 @@ import {
 } from '../../core/types/workout';
 import { Measurement } from '../../core/types/measurement';
 import { Equipment } from '../../core/types/equipment';
-import { RouteSegment, RouteSegmentDetail } from '../../core/types/route-segment';
+import {
+  RouteSegment,
+  RouteSegmentDetail,
+  RouteSegmentDifficulty,
+} from '../../core/types/route-segment';
 import {
   GeoJsonFeatureCollection,
   HeatmapCoordinateList,
@@ -447,6 +451,11 @@ export class Api {
       name: string;
       start: number;
       end: number;
+      category?: string;
+      sub_category?: string;
+      visibility?: 'public' | 'followers' | '' | 'private';
+      description?: string;
+      difficulty?: RouteSegmentDifficulty;
     },
   ): Observable<APIResponse<RouteSegmentDetail>> {
     return this.http.post<APIResponse<RouteSegmentDetail>>(
@@ -459,9 +468,14 @@ export class Api {
     id: number,
     params: {
       name: string;
-      notes: string;
-      bidirectional: boolean;
-      circular: boolean;
+      notes?: string;
+      category?: string;
+      sub_category?: string;
+      visibility?: 'public' | 'followers' | '' | 'private';
+      description?: string;
+      difficulty?: RouteSegmentDifficulty;
+      bidirectional?: boolean;
+      circular?: boolean;
     },
   ): Observable<APIResponse<RouteSegmentDetail>> {
     return this.http.put<APIResponse<RouteSegmentDetail>>(

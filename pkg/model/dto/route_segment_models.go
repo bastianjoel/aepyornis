@@ -8,30 +8,54 @@ import (
 
 // RouteSegmentResponse represents a route segment in API v2 responses
 type RouteSegmentResponse struct {
-	ID            uint64    `json:"id"`
-	Name          string    `json:"name"`
-	Notes         string    `json:"notes,omitempty"`
-	Filename      string    `json:"filename"`
-	TotalDistance float64   `json:"total_distance"`
-	MinElevation  float64   `json:"min_elevation"`
-	MaxElevation  float64   `json:"max_elevation"`
-	TotalUp       float64   `json:"total_up"`
-	TotalDown     float64   `json:"total_down"`
-	Bidirectional bool      `json:"bidirectional"`
-	Circular      bool      `json:"circular"`
-	MatchCount    int       `json:"match_count"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID            uint64                       `json:"id"`
+	ProfileID     uint64                       `json:"profile_id"`
+	ProfileName   string                       `json:"profile_name,omitempty"`
+	Name          string                       `json:"name"`
+	Notes         string                       `json:"notes,omitempty"`
+	Category      string                       `json:"category,omitempty"`
+	SubCategory   string                       `json:"sub_category,omitempty"`
+	Visibility    model.WorkoutVisibility      `json:"visibility"`
+	Description   string                       `json:"description,omitempty"`
+	Difficulty    model.RouteSegmentDifficulty `json:"difficulty,omitempty"`
+	Filename      string                       `json:"filename"`
+	TotalDistance float64                      `json:"total_distance"`
+	MinElevation  float64                      `json:"min_elevation"`
+	MaxElevation  float64                      `json:"max_elevation"`
+	TotalUp       float64                      `json:"total_up"`
+	TotalDown     float64                      `json:"total_down"`
+	Bidirectional bool                         `json:"bidirectional"`
+	Circular      bool                         `json:"circular"`
+	MatchCount    int                          `json:"match_count"`
+	CreatedAt     time.Time                    `json:"created_at"`
+	UpdatedAt     time.Time                    `json:"updated_at"`
 }
 
 // NewRouteSegmentResponse converts a database route segment to API response
 func NewRouteSegmentResponse(rs *model.RouteSegment) RouteSegmentResponse {
 	matchCount := len(rs.RouteSegmentMatches)
 
+	profileName := ""
+	if rs.Profile != nil {
+		profileName = rs.Profile.DisplayName
+	}
+
+	visibility := rs.Visibility
+	if visibility == "" {
+		visibility = model.WorkoutVisibilityPublic
+	}
+
 	return RouteSegmentResponse{
 		ID:            rs.ID,
+		ProfileID:     rs.ProfileID,
+		ProfileName:   profileName,
 		Name:          rs.Name,
 		Notes:         rs.Notes,
+		Category:      rs.Category,
+		SubCategory:   rs.SubCategory,
+		Visibility:    visibility,
+		Description:   rs.Description,
+		Difficulty:    rs.Difficulty,
 		Filename:      rs.Filename,
 		TotalDistance: rs.TotalDistance,
 		MinElevation:  rs.MinElevation,

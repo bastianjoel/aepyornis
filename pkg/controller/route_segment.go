@@ -2,6 +2,8 @@ package controller
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -153,6 +155,8 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 	files := form.File["file"]
 	errMsg := []string{}
 
+	user := currentUser(c)
+
 	segments := []*dto.RouteSegmentResponse{}
 	for _, file := range files {
 		content, parseErr := uploadedRouteSegmentFile(file)
@@ -167,6 +171,44 @@ func (rc *routeSegmentController) CreateRouteSegment(c echo.Context) error {
 		if addErr != nil {
 			errMsg = append(errMsg, addErr.Error())
 			continue
+		}
+
+		if user != nil {
+			w.ProfileID = user.Profile.ID
+			w.Profile = &user.Profile
+		}
+
+		cat := c.FormValue("category")
+		if !isValidRouteSegmentCategory(cat) {
+			errMsg = append(errMsg, fmt.Sprintf("invalid route segment category: %s", cat))
+			continue
+		}
+
+		subCat := c.FormValue("sub_category")
+		if !isValidRouteSegmentSubCategory(cat, subCat) {
+			errMsg = append(errMsg, fmt.Sprintf("invalid route segment sub category: %s", subCat))
+			continue
+		}
+
+		vis := model.WorkoutVisibility(c.FormValue("visibility"))
+		desc := c.FormValue("description")
+		diff := model.RouteSegmentDifficulty(c.FormValue("difficulty"))
+
+		if vis == "" {
+			vis = model.WorkoutVisibilityPublic
+		}
+		if vis.IsValid() {
+			w.Visibility = vis
+		}
+		if diff.IsValid() {
+			w.Difficulty = diff
+		}
+		w.Category = cat
+		w.SubCategory = subCat
+		w.Description = desc
+
+		if err := rc.routeSegmentRepo.Save(w); err != nil {
+			rc.logger.Error("Failed to save route segment metadata", "route_segment_id", w.ID, "error", err)
 		}
 
 		resp := dto.NewRouteSegmentResponse(w)
@@ -214,6 +256,13 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
+	if !isValidRouteSegmentCategory(params.Category) {
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid route segment category: %s", params.Category))
+	}
+	if !isValidRouteSegmentSubCategory(params.Category, params.SubCategory) {
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid route segment sub category: %s", params.SubCategory))
+	}
+
 	content, err := model.RouteSegmentFromPoints(workout, &params)
 	if err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
@@ -221,6 +270,25 @@ func (rc *routeSegmentController) CreateRouteSegmentFromWorkout(c echo.Context) 
 
 	rs, err := rc.routeSegmentRepo.CreateFromContent("", params.Filename(), content)
 	if err != nil {
+		return renderApiError(c, http.StatusInternalServerError, err)
+	}
+
+	user := currentUser(c)
+	if user != nil {
+		rs.ProfileID = user.Profile.ID
+		rs.Profile = &user.Profile
+	}
+	if params.Visibility != "" {
+		rs.Visibility = params.Visibility
+	} else {
+		rs.Visibility = model.WorkoutVisibilityPublic
+	}
+	rs.Category = params.Category
+	rs.SubCategory = params.SubCategory
+	rs.Description = params.Description
+	rs.Difficulty = params.Difficulty
+
+	if err := rc.routeSegmentRepo.Save(rs); err != nil {
 		return renderApiError(c, http.StatusInternalServerError, err)
 	}
 
@@ -318,10 +386,15 @@ func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 	}
 
 	type updateParams struct {
-		Name          string `json:"name"`
-		Notes         string `json:"notes"`
-		Bidirectional bool   `json:"bidirectional"`
-		Circular      bool   `json:"circular"`
+		Name          string                       `json:"name"`
+		Notes         string                       `json:"notes"`
+		Category      string                       `json:"category"`
+		SubCategory   string                       `json:"sub_category"`
+		Visibility    model.WorkoutVisibility      `json:"visibility"`
+		Description   string                       `json:"description"`
+		Difficulty    model.RouteSegmentDifficulty `json:"difficulty"`
+		Bidirectional bool                         `json:"bidirectional"`
+		Circular      bool                         `json:"circular"`
 	}
 
 	var params updateParams
@@ -329,8 +402,31 @@ func (rc *routeSegmentController) UpdateRouteSegment(c echo.Context) error {
 		return renderApiError(c, http.StatusBadRequest, err)
 	}
 
+	if len(params.Name) == 0 {
+		return renderApiError(c, http.StatusBadRequest, errors.New("route segment name is required"))
+	}
+	if params.Visibility != "" && !params.Visibility.IsValid() {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid route segment visibility"))
+	}
+	if params.Difficulty != "" && !params.Difficulty.IsValid() {
+		return renderApiError(c, http.StatusBadRequest, errors.New("invalid route segment difficulty"))
+	}
+	if !isValidRouteSegmentCategory(params.Category) {
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid route segment category: %s", params.Category))
+	}
+	if !isValidRouteSegmentSubCategory(params.Category, params.SubCategory) {
+		return renderApiError(c, http.StatusBadRequest, fmt.Errorf("invalid route segment sub category: %s", params.SubCategory))
+	}
+
 	rs.Name = params.Name
 	rs.Notes = params.Notes
+	rs.Category = params.Category
+	rs.SubCategory = params.SubCategory
+	if params.Visibility != "" {
+		rs.Visibility = params.Visibility
+	}
+	rs.Description = params.Description
+	rs.Difficulty = params.Difficulty
 	rs.Bidirectional = params.Bidirectional
 	rs.Circular = params.Circular
 	rs.Dirty = true
@@ -420,4 +516,19 @@ func uploadedRouteSegmentFile(file *multipart.FileHeader) ([]byte, error) {
 	}
 
 	return content, nil
+}
+
+func isValidRouteSegmentCategory(cat string) bool {
+	if cat == "" {
+		return true
+	}
+	wt, valid := model.ParseWorkoutType(cat)
+	return valid && wt != model.WorkoutTypeAll && wt != model.WorkoutTypeUnknown
+}
+
+func isValidRouteSegmentSubCategory(cat string, subCat string) bool {
+	if subCat == "" {
+		return true
+	}
+	return model.IsValidWorkoutSubTypeForCategory(model.WorkoutType(cat), subCat)
 }
