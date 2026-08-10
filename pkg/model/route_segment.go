@@ -68,6 +68,7 @@ type RouteSegment struct {
 	Filename      string       `json:"filename"`                          // The filename of the file
 
 	Points []WorkoutRecord `gorm:"serializer:json" json:"points"` // The GPS points of the workout
+	Geom   PostGISGeometry `json:"-"`                             // PostGIS geometry
 
 	Content             []byte               `gorm:"type:bytes" json:"content"`            // The file content
 	Checksum            []byte               `gorm:"not null;uniqueIndex" json:"checksum"` // The checksum of the content
@@ -200,6 +201,8 @@ func (rs *RouteSegment) Create(db *gorm.DB) error {
 			return err
 		}
 
+		_ = UpdateRouteSegmentGeometry(tx, rs.ID, rs.Points)
+
 		if rs.RouteSegmentMatches != nil {
 			if err := replaceRouteSegmentMatches(tx, rs.ID, rs.RouteSegmentMatches); err != nil {
 				return err
@@ -216,6 +219,8 @@ func (rs *RouteSegment) Save(db *gorm.DB) error {
 	}
 
 	return db.Transaction(func(tx *gorm.DB) error {
+		_ = UpdateRouteSegmentGeometry(tx, rs.ID, rs.Points)
+
 		if rs.RouteSegmentMatches != nil {
 			if err := replaceRouteSegmentMatches(tx, rs.ID, rs.RouteSegmentMatches); err != nil {
 				return err

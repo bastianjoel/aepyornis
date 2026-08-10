@@ -47,33 +47,32 @@ func makeUpdateRouteSegmentHandler(db *gorm.DB, logger *slog.Logger, routeSegmen
 }
 
 func rematchRouteSegmentToWorkouts(db *gorm.DB, rs *model.RouteSegment, l *slog.Logger) error {
-	rs.RouteSegmentMatches = []*model.RouteSegmentMatch{}
-
-	var workoutsBatch []*model.Workout
-	qw := model.PreloadWorkoutDetails(db).Model(&model.Workout{}).
-		FindInBatches(&workoutsBatch, workerWorkoutsBatchSize, func(wtx *gorm.DB, batchNo int) error {
-			l.With("batch_no", batchNo).
-				With("workouts_batch_size", len(workoutsBatch)).
-				Debug("rematchRouteSegmentsToWorkouts start")
-
-			newMatches := rs.FindMatches(workoutsBatch)
-			rs.RouteSegmentMatches = append(rs.RouteSegmentMatches, newMatches...)
-
-			l.With("route_segment_id", rs.ID).
-				With("new_matches", len(newMatches)).
-				With("total_matches", len(rs.RouteSegmentMatches)).
-				Debug("Updating route segments")
-
-			l.With("batch_no", batchNo).
-				With("workouts_batch_size", len(workoutsBatch)).
-				Debug("rematchRouteSegmentsToWorkouts done")
-
-			return nil
-		})
-
-	if qw.Error != nil {
-		return fmt.Errorf("error in batch processing of route segment matching: %w", qw.Error)
+	if err := model.UpdateRouteSegmentGeometry(db, rs.ID, rs.Points); err != nil {
+		l.Warn("Failed to update route segment geometry", "error", err)
 	}
+
+	matches, err := model.FindPostGISRouteSegmentMatches(db, rs.ID, 0)
+	if err != nil {
+		l.Warn("PostGIS matching query unavailable, falling back to batch matching", "error", err)
+
+		rs.RouteSegmentMatches = []*model.RouteSegmentMatch{}
+		var workoutsBatch []*model.Workout
+		qw := model.PreloadWorkoutDetails(db).Model(&model.Workout{}).
+			FindInBatches(&workoutsBatch, workerWorkoutsBatchSize, func(wtx *gorm.DB, batchNo int) error {
+				newMatches := rs.FindMatches(workoutsBatch)
+				rs.RouteSegmentMatches = append(rs.RouteSegmentMatches, newMatches...)
+				return nil
+			})
+		if qw.Error != nil {
+			return fmt.Errorf("error in batch processing of route segment matching: %w", qw.Error)
+		}
+	} else {
+		rs.RouteSegmentMatches = matches
+	}
+
+	l.With("route_segment_id", rs.ID).
+		With("matches_found", len(rs.RouteSegmentMatches)).
+		Info("Route segment matching completed")
 
 	rs.Dirty = false
 

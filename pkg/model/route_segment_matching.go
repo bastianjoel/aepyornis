@@ -1,8 +1,13 @@
 package model
 
 import (
+	"errors"
+	"fmt"
 	"math"
+	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // MaxDeltaMeter is the maximum distance in meters that a point can be away from
@@ -32,6 +37,9 @@ type RouteSegmentMatch struct {
 }
 
 func (rsm *RouteSegmentMatch) AverageSpeed() float64 {
+	if rsm.Duration.Seconds() == 0 {
+		return 0
+	}
 	return rsm.Distance / rsm.Duration.Seconds()
 }
 
@@ -60,6 +68,9 @@ func (rsm *RouteSegmentMatch) IsBetterThan(current *RouteSegmentMatch) bool {
 // within MaxTotalDistancePercentage of the distance of the current route
 // segment
 func (rsm *RouteSegmentMatch) MatchesDistance(distance float64) bool {
+	if distance == 0 {
+		return true
+	}
 	return math.Abs(rsm.Distance/distance) > MaxTotalDistanceFraction
 }
 
@@ -83,9 +94,6 @@ func (rsm *RouteSegmentMatch) calculate() {
 }
 
 // FindMatches will find all workouts that match the current route segment
-// The result will contain a list of RouteSegmentMatches, which will contain
-// the workout, the point of the workout along the segment, and the total
-// distance and duration of the segment for this workout.
 func (rs *RouteSegment) FindMatches(workouts []*Workout) []*RouteSegmentMatch {
 	if len(rs.Points) == 0 {
 		return nil
@@ -103,8 +111,6 @@ func (rs *RouteSegment) FindMatches(workouts []*Workout) []*RouteSegmentMatch {
 }
 
 // Match will find the best match (if any) of the route segment in the workout
-// First calculate all possible starting points, then find the best one that
-// actually matches the segment.
 func (rs *RouteSegment) Match(workout *Workout) *RouteSegmentMatch {
 	if !workout.Type.IsLocation() {
 		return nil
@@ -145,12 +151,7 @@ func (rs *RouteSegment) Match(workout *Workout) *RouteSegmentMatch {
 }
 
 // MatchSegment starts at a point and continues the workout track while it finds
-// each next point of the route segment, assuming there are many more points in
-// the workout track than the route segment.
-// If it can't find all points of the segment in the correct order, it returns false.
-// Otherwise it returns the last point index of the route that matches the final
-// point of the route segment.
-// If forward is true, we increment the index, otherwise we decrement it
+// each next point of the route segment.
 func (rs *RouteSegment) MatchSegment(workout *Workout, start int, forward bool) (int, bool) {
 	workoutLength := len(workout.Records)
 	segmentLength := len(rs.Points)
@@ -208,9 +209,6 @@ func (rs *RouteSegment) StartingPoints(points []WorkoutRecord) []int {
 }
 
 // FindMatches will find all workouts that match the current route segment
-// The result will contain a list of RouteSegmentMatches, which will contain
-// the workout, the point of the workout along the segment, and the total
-// distance and duration of the segment for this workout.
 func (w *Workout) FindMatches(routeSegments []*RouteSegment) []*RouteSegmentMatch {
 	if !w.HasTracks() {
 		return nil
@@ -225,4 +223,155 @@ func (w *Workout) FindMatches(routeSegments []*RouteSegment) []*RouteSegmentMatc
 	}
 
 	return result
+}
+
+// PostGISMatchResult holds the raw match data returned by the PostGIS spatial join query
+type PostGISMatchResult struct {
+	RouteSegmentID   uint64  `gorm:"column:route_segment_id"`
+	WorkoutID        uint64  `gorm:"column:workout_id"`
+	StartIndex       int     `gorm:"column:start_index"`
+	EndIndex         int     `gorm:"column:end_index"`
+	MatchedPoints    int     `gorm:"column:matched_points"`
+	Distance         float64 `gorm:"column:distance"`
+	DurationNS       int64   `gorm:"column:duration_ns"`
+	SegmentTotalDist float64 `gorm:"column:segment_total_distance"`
+}
+
+// FindPostGISRouteSegmentMatches executes a native PostGIS spatial join to match route segments against workouts.
+// - If routeSegmentID > 0, matches for that specific segment are queried.
+// - If workoutID > 0, matches for that specific workout are queried.
+// - Points with 0/0 lat/lng (no GPS fix) are filtered out via (w.lat != 0 OR w.lng != 0).
+func FindPostGISRouteSegmentMatches(db *gorm.DB, routeSegmentID uint64, workoutID uint64) ([]*RouteSegmentMatch, error) {
+	if db == nil {
+		return nil, errors.New("db is nil")
+	}
+
+	query := `
+	WITH matched_points AS (
+		SELECT 
+			s.id AS route_segment_id,
+			w.workout_id AS workout_id,
+			w.sort_order AS point_index,
+			LAG(w.sort_order) OVER (PARTITION BY s.id, w.workout_id ORDER BY w.sort_order) AS prev_index
+		FROM 
+			route_segments s
+		JOIN 
+			workout_records w
+		ON 
+			ST_DWithin(s.geom::geography, w.geom::geography, 50)
+		WHERE 
+			(w.lat != 0 OR w.lng != 0)
+			AND w.geom IS NOT NULL
+			AND s.geom IS NOT NULL
+			AND (? = 0 OR s.id = ?)
+			AND (? = 0 OR w.workout_id = ?)
+	),
+	matched_groups AS (
+		SELECT 
+			route_segment_id,
+			workout_id,
+			point_index,
+			SUM(CASE WHEN prev_index IS NULL OR point_index - prev_index > 10 THEN 1 ELSE 0 END) 
+				OVER (PARTITION BY route_segment_id, workout_id ORDER BY point_index) AS grp
+		FROM 
+			matched_points
+	),
+	match_summary AS (
+		SELECT 
+			mg.route_segment_id,
+			mg.workout_id,
+			MIN(mg.point_index) AS start_index,
+			MAX(mg.point_index) AS end_index,
+			COUNT(mg.point_index) AS matched_points
+		FROM 
+			matched_groups mg
+		GROUP BY 
+			mg.route_segment_id,
+			mg.workout_id,
+			mg.grp
+		HAVING 
+			COUNT(mg.point_index) >= 2
+	)
+	SELECT 
+		ms.route_segment_id,
+		ms.workout_id,
+		ms.start_index,
+		ms.end_index,
+		ms.matched_points,
+		COALESCE(ABS(w_end.total_distance - w_start.total_distance), 0) AS distance,
+		COALESCE(ABS(w_end.total_duration - w_start.total_duration), 0) AS duration_ns,
+		COALESCE(s.total_distance, 0) AS segment_total_distance
+	FROM 
+		match_summary ms
+	JOIN 
+		route_segments s ON s.id = ms.route_segment_id
+	JOIN 
+		workout_records w_start ON w_start.workout_id = ms.workout_id AND w_start.sort_order = ms.start_index
+	JOIN 
+		workout_records w_end ON w_end.workout_id = ms.workout_id AND w_end.sort_order = ms.end_index
+	ORDER BY 
+		ms.workout_id, 
+		ms.start_index;
+	`
+
+	var rawResults []PostGISMatchResult
+	err := db.Raw(query, routeSegmentID, routeSegmentID, workoutID, workoutID).Scan(&rawResults).Error
+	if err != nil {
+		return nil, err
+	}
+
+	matches := make([]*RouteSegmentMatch, 0, len(rawResults))
+	for _, res := range rawResults {
+		dist := res.Distance
+		if res.SegmentTotalDist > 0 && math.Abs(dist/res.SegmentTotalDist) <= MaxTotalDistanceFraction {
+			continue
+		}
+
+		m := &RouteSegmentMatch{
+			RouteSegmentID: res.RouteSegmentID,
+			WorkoutID:      res.WorkoutID,
+			FirstID:        res.StartIndex,
+			LastID:         res.EndIndex,
+			Distance:       dist,
+			Duration:       time.Duration(res.DurationNS),
+		}
+		matches = append(matches, m)
+	}
+
+	return matches, nil
+}
+
+// UpdateRouteSegmentGeometry updates the PostGIS geometry column for a route segment.
+func UpdateRouteSegmentGeometry(db *gorm.DB, segmentID uint64, points []WorkoutRecord) error {
+	if db == nil || segmentID == 0 {
+		return nil
+	}
+
+	var valid []WorkoutRecord
+	for _, p := range points {
+		if p.Lat != 0 || p.Lng != 0 {
+			valid = append(valid, p)
+		}
+	}
+
+	if len(valid) == 0 {
+		return db.Exec(`UPDATE route_segments SET geom = NULL WHERE id = ?`, segmentID).Error
+	}
+
+	if len(valid) == 1 {
+		wkt := fmt.Sprintf("POINT(%.7f %.7f)", valid[0].Lng, valid[0].Lat)
+		return db.Exec(`UPDATE route_segments SET geom = ST_SetSRID(ST_GeomFromText(?, 4326), 4326) WHERE id = ?`, wkt, segmentID).Error
+	}
+
+	var sb strings.Builder
+	sb.WriteString("LINESTRING(")
+	for i, p := range valid {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(fmt.Sprintf("%.7f %.7f", p.Lng, p.Lat))
+	}
+	sb.WriteString(")")
+
+	return db.Exec(`UPDATE route_segments SET geom = ST_SetSRID(ST_GeomFromText(?, 4326), 4326) WHERE id = ?`, sb.String(), segmentID).Error
 }

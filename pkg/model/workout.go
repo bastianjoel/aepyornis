@@ -606,11 +606,13 @@ func persistWorkoutRecords(tx *gorm.DB, w *Workout) error {
 		return err
 	}
 
-	if len(w.Records) == 0 {
-		return nil
+	if err := tx.CreateInBatches(&w.Records, mapDataPointsInsertBatchSize).Error; err != nil {
+		return err
 	}
 
-	return tx.CreateInBatches(&w.Records, mapDataPointsInsertBatchSize).Error
+	_ = tx.Exec(`UPDATE workout_records SET geom = ST_SetSRID(ST_MakePoint(lng, lat), 4326) WHERE workout_id = ? AND (lat != 0 OR lng != 0)`, w.ID).Error
+
+	return nil
 }
 
 func persistWorkoutLaps(tx *gorm.DB, w *Workout) error {
@@ -884,13 +886,17 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 }
 
 func (w *Workout) UpdateRouteSegmentMatches(db *gorm.DB) error {
-	var routeSegments []*RouteSegment
-	if err := db.Preload("RouteSegmentMatches.Workout").Order("created_at DESC").Find(&routeSegments).Error; err != nil {
-		return err
+	matches, err := FindPostGISRouteSegmentMatches(db, 0, w.ID)
+	if err != nil {
+		var routeSegments []*RouteSegment
+		if err := db.Preload("RouteSegmentMatches.Workout").Order("created_at DESC").Find(&routeSegments).Error; err != nil {
+			return err
+		}
+		w.RouteSegmentMatches = w.FindMatches(routeSegments)
+		return nil
 	}
 
-	w.RouteSegmentMatches = w.FindMatches(routeSegments)
-
+	w.RouteSegmentMatches = matches
 	return nil
 }
 
